@@ -1,0 +1,13 @@
+{
+ "colums": [
+  "name",
+  "sql"
+ ],
+ "results": [
+  [
+   "PlaybackActivity",
+   "CREATE TABLE PlaybackActivity (DateCreated DATETIME NOT NULL, UserId TEXT, ItemId TEXT, ItemType TEXT, ItemName TEXT, PlaybackMethod TEXT, ClientName TEXT, DeviceName TEXT, PlayDuration INT)"
+  ]
+ ],
+ "message": ""
+}

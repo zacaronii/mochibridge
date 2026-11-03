@@ -1,0 +1,108 @@
+{
+ "id": "8099d51b-ad92-4d21-8930-b256a9c62e3d",
+ "ino": "100000000000000001",
+ "oldLibraryItemId": null,
+ "libraryId": "1f22e0b0-28cf-4b76-b414-dc40a1542a9f",
+ "folderId": "858e644b-903d-4db5-b28e-d1b24b3b2156",
+ "path": "<path>",
+ "relPath": "歴史をゆるく学ぶテストラジオ （TEST RADIO）",
+ "isFile": false,
+ "mtimeMs": 1793224807927,
+ "ctimeMs": 1793263203455,
+ "birthtimeMs": 0,
+ "addedAt": 1781123110405,
+ "updatedAt": 1793552402244,
+ "isMissing": false,
+ "isInvalid": false,
+ "mediaType": "podcast",
+ "media": {
+  "id": "a505a49b-4953-4a7c-9fd4-1bb8ca322466",
+  "metadata": {
+   "title": "歴史をゆるく学ぶテストラジオ （TEST RADIO）",
+   "author": "Example inc.",
+   "description": "歴史をゆるく学ぶ架空のインターネットラジオです。\n\n毎回ひとりの架空の人物を取り上げて、のんびり話します。\n\nーーー\n\nTEST RADIO is a fictional history talk show used as test data.",
+   "releaseDate": "2026-06-03T21:00:00Z",
+   "genres": [
+    "History",
+    "Podcasts"
+   ],
+   "feedUrl": "<redacted>",
+   "imageUrl": "https://example.com/images/podcast-b.jpg",
+   "itunesPageUrl": "https://podcasts.example.com/podcast/id900000002",
+   "itunesId": "900000002",
+   "itunesArtistId": "",
+   "explicit": false,
+   "language": "ja",
+   "type": "episodic",
+   "titleIgnorePrefix": "歴史をゆるく学ぶテストラジオ （TEST RADIO）"
+  },
+  "coverPath": "<redacted>",
+  "tags": [],
+  "numEpisodes": 45,
+  "autoDownloadEpisodes": true,
+  "autoDownloadSchedule": "0 * * * *",
+  "lastEpisodeCheck": 1793552402231,
+  "maxEpisodesToKeep": 0,
+  "maxNewEpisodesToDownload": 3,
+  "size": 1894057231,
+  "libraryItemId": "8099d51b-ad92-4d21-8930-b256a9c62e3d",
+  "episodes": []
+ },
+ "numFiles": 46,
+ "size": 1894099369,
+ "lastScan": 1793336401565,
+ "scanVersion": "2.36.1",
+ "libraryFiles": [
+  {
+   "ino": "100000000000000002",
+   "metadata": {
+    "filename": "cover.jpg",
+    "ext": ".jpg",
+    "path": "<path>",
+    "relPath": "cover.jpg",
+    "size": 42138,
+    "mtimeMs": 1781123110518,
+    "ctimeMs": 1781167731179,
+    "birthtimeMs": 0
+   },
+   "isSupplementary": null,
+   "addedAt": 1781123110529,
+   "updatedAt": 1781240400044,
+   "fileType": "image"
+  },
+  {
+   "ino": "100000000000000003",
+   "metadata": {
+    "filename": "【65-1】架空の人物 〜はじまりの回〜【TEST RADIOショート 架空編1】.mp3",
+    "ext": ".mp3",
+    "path": "<path>",
+    "relPath": "【65-1】架空の人物 〜はじまりの回〜【TEST RADIOショート 架空編1】.mp3",
+    "size": 35300896,
+    "mtimeMs": 1781125343386,
+    "ctimeMs": 1781167731591,
+    "birthtimeMs": 0
+   },
+   "isSupplementary": null,
+   "addedAt": 1781125343399,
+   "updatedAt": 1781240400044,
+   "fileType": "audio"
+  },
+  {
+   "ino": "100000000000000004",
+   "metadata": {
+    "filename": "【65-2】Why 架空の人物は旅に出たのか 〜つづきの回〜【TEST RADIOショート 架空編2】.mp3",
+    "ext": ".mp3",
+    "path": "<path>",
+    "relPath": "【65-2】Why 架空の人物は旅に出たのか 〜つづきの回〜【TEST RADIOショート 架空編2】.mp3",
+    "size": 29337970,
+    "mtimeMs": 1781125344060,
+    "ctimeMs": 1781167731772,
+    "birthtimeMs": 0
+   },
+   "isSupplementary": null,
+   "addedAt": 1781125344073,
+   "updatedAt": 1781240400044,
+   "fileType": "audio"
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+secrets.env
+*.sqlite
+*.sqlite-*
+*.db
+scratch/
+__pycache__/
+.venv/
+*.zip
+.venv/
+config.yaml
+data/
+*.egg-info/
+.pytest_cache/

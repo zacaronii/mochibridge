@@ -1,0 +1,34 @@
+# Example stack. Put the bridge on the same Docker network(s) as kechimochi and your media servers so it can
+# reach them by container name (the URLs in config.yaml), and publish the web UI only on your LAN.
+services:
+  mochibridge:
+    image: ghcr.io/zacaronii/mochibridge:latest
+    container_name: mochibridge
+    restart: unless-stopped
+    user: ${PUID}:${PGID}
+    environment:
+      TZ: ${TZ}
+      JELLYFIN_API_KEY: ${JELLYFIN_API_KEY}
+      JELLYFIN_USER: ${JELLYFIN_USER}
+      KAVITA_API_KEY: ${KAVITA_API_KEY}
+      KAVITA_USER: ${KAVITA_USER}
+      ABS_API_KEY: ${ABS_API_KEY}
+      ABS_USER: ${ABS_USER}
+      BRIDGE_API_TOKEN: ${BRIDGE_API_TOKEN}
+    networks:
+      - media                                # kechimochi, Jellyfin, Kavita, Audiobookshelf
+    volumes:
+      - ${APPDATA}/mochibridge:/data         # config.yaml, bridge.sqlite, backups/, youtube-cookies.txt
+      - ${APPDATA}/anibridge:/anibridge:ro   # optional: anibridge's ID map (AniDB/TVDB/TMDB -> AniList)
+    # The web UI has no login: keep it off the internet. Either publish it on a LAN address...
+    ports:
+      - "192.0.2.10:8080:8080"               # replace with this host's LAN IP
+    # ...or drop `ports:` and route it through a reverse proxy with a LAN-only allowlist, e.g. Traefik:
+    # labels:
+    #   - traefik.enable=true
+    #   - traefik.http.routers.mochibridge.rule=Host(`mochibridge.example.com`)
+    #   - traefik.http.routers.mochibridge.middlewares=lan-only@file
+    #   - traefik.http.services.mochibridge.loadbalancer.server.port=8080
+networks:
+  media:
+    external: true

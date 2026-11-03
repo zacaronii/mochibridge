@@ -1,0 +1,132 @@
+[
+ {
+  "sessionDataIds": [
+   6218
+  ],
+  "sessionId": 901,
+  "isGeneratedSession": false,
+  "startTimeUtc": "2026-11-01T02:02:07.0399593",
+  "endTimeUtc": "2026-11-01T02:04:28.8813305",
+  "localDate": "2026-10-31T00:00:00",
+  "seriesId": 501,
+  "seriesName": "ネジマキボーイ",
+  "seriesFormat": 1,
+  "chapters": [
+   {
+    "chapterId": 7529,
+    "label": "Volume 1",
+    "startTimeUtc": "2026-11-01T02:02:07.0399593",
+    "endTimeUtc": "2026-11-01T02:04:28.8813305",
+    "pagesRead": -3,
+    "wordsRead": 0,
+    "durationSeconds": 141,
+    "startPage": 7,
+    "endPage": 4,
+    "totalPages": 197,
+    "completed": false
+   }
+  ],
+  "libraryId": 3,
+  "libraryName": "漫画棚",
+  "pagesRead": -3,
+  "wordsRead": 0,
+  "durationSeconds": 141,
+  "totalPages": 197
+ },
+ {
+  "sessionDataIds": [
+   6192,
+   6193
+  ],
+  "sessionId": 902,
+  "isGeneratedSession": true,
+  "startTimeUtc": "2026-10-23T22:08:24.2558501",
+  "endTimeUtc": "2026-10-23T23:54:56.0888931",
+  "localDate": "2026-10-23T00:00:00",
+  "seriesId": 502,
+  "seriesName": "ねこ　ネコ　猫　キャット",
+  "seriesFormat": 3,
+  "chapters": [
+   {
+    "chapterId": 7360,
+    "label": "ねこ ネコ 猫 キャット ２",
+    "startTimeUtc": "2026-10-23T22:58:46.2528965",
+    "endTimeUtc": "2026-10-23T23:54:56.0888931",
+    "pagesRead": 0,
+    "wordsRead": 18843,
+    "durationSeconds": 3369,
+    "startPage": 55,
+    "endPage": 55,
+    "totalPages": 55,
+    "completed": true
+   },
+   {
+    "chapterId": 7359,
+    "label": "ねこ ネコ 猫 キャット",
+    "startTimeUtc": "2026-10-23T22:08:24.2558501",
+    "endTimeUtc": "2026-10-23T22:58:46.2528965",
+    "pagesRead": 0,
+    "wordsRead": 16898,
+    "durationSeconds": 3021,
+    "startPage": 46,
+    "endPage": 46,
+    "totalPages": 46,
+    "completed": true
+   }
+  ],
+  "libraryId": 4,
+  "libraryName": "小説棚",
+  "pagesRead": 0,
+  "wordsRead": 35741,
+  "durationSeconds": 6390,
+  "totalPages": 101
+ },
+ {
+  "sessionDataIds": [
+   6167,
+   6165
+  ],
+  "sessionId": 903,
+  "isGeneratedSession": false,
+  "startTimeUtc": "2026-10-15T22:29:48.1799972",
+  "endTimeUtc": "2026-10-15T22:37:41.5831943",
+  "localDate": "2026-10-15T00:00:00",
+  "seriesId": 503,
+  "seriesName": "待ってください、鷲尾さん",
+  "seriesFormat": 1,
+  "chapters": [
+   {
+    "chapterId": 7521,
+    "label": "Volume 2",
+    "startTimeUtc": "2026-10-15T22:37:27.3919653",
+    "endTimeUtc": "2026-10-15T22:37:41.5831943",
+    "pagesRead": 1,
+    "wordsRead": 0,
+    "durationSeconds": 14,
+    "startPage": 1,
+    "endPage": 2,
+    "totalPages": 168,
+    "completed": false
+   },
+   {
+    "chapterId": 7520,
+    "label": "Volume 1",
+    "startTimeUtc": "2026-10-15T22:29:48.1799972",
+    "endTimeUtc": "2026-10-15T22:31:38.8020881",
+    "pagesRead": 2,
+    "wordsRead": 0,
+    "durationSeconds": 110,
+    "startPage": 2,
+    "endPage": 4,
+    "totalPages": 232,
+    "completed": false
+   }
+  ],
+  "libraryId": 3,
+  "libraryName": "漫画棚",
+  "pagesRead": 3,
+  "wordsRead": 0,
+  "durationSeconds": 124,
+  "totalPages": 400
+ }
+]

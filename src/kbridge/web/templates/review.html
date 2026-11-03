@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Review</h1>
+<p class="muted">Sessions held because a setting says <i>review</i>. Approve to log them in kechimochi, reject to skip them for good.
+Which kinds are held is set on the <a href="/settings">Settings</a> page.</p>
+
+{% for reason, items in groups.items() %}
+<h2>{{ reason|reason }} <span class="muted small">({{ items|length }})</span></h2>
+<form method="post" action="/review">
+  <input type="hidden" name="token" value="{{ token }}">
+  <div class="panel">
+  <table>
+    <tr><th><input type="checkbox" onclick="for (const c of this.closest('table').querySelectorAll('input[name=key]')) c.checked = this.checked"></th>
+        <th>Date</th><th>Series</th><th class="hide-sm">Note</th><th>Min</th><th class="hide-sm">Source</th><th></th></tr>
+    {% for r in items %}
+    {% set key = [r.source, r.session_id, r.item_key]|tojson %}
+    <tr>
+      <td><input type="checkbox" name="key" value='{{ key }}'></td>
+      <td class="nowrap">{{ r.meta.date }}</td>
+      <td>{{ r.meta.series or r.meta.title }}{% if r.meta.quality == 'estimate' %} <span class="chip warn">estimate</span>{% endif %}</td>
+      <td class="hide-sm note">{{ r.meta.note }}</td>
+      <td class="num">{{ r.meta.minutes|round|int }}</td>
+      <td class="hide-sm"><span class="chip">{{ r.source }}</span></td>
+      <td class="nowrap">
+        <button class="primary" name="row" value='{{ {"key": [r.source, r.session_id, r.item_key], "action": "approve"}|tojson }}'>Log</button>
+        <button class="danger" name="row" value='{{ {"key": [r.source, r.session_id, r.item_key], "action": "reject"}|tojson }}'>Skip</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <span class="small muted">Selected:</span>
+    <button class="primary" name="action" value="approve">Log selected</button>
+    <button class="danger" name="action" value="reject">Skip selected</button>
+  </div>
+</form>
+{% else %}
+<p class="muted">Nothing waiting for review.</p>
+{% endfor %}
+
+{% if decided %}
+<h2>Recently decided</h2>
+<div class="panel">
+<table>
+  <tr><th>Decided</th><th>Series</th><th class="hide-sm">Note</th><th>Min</th><th>Decision</th></tr>
+  {% for r in decided %}
+  <tr>
+    <td class="nowrap">{{ r.decided_at|local }}</td>
+    <td>{{ r.meta.series or r.meta.title }}</td>
+    <td class="hide-sm note">{{ r.meta.note }}</td>
+    <td class="num">{{ (r.meta.minutes or 0)|round|int }}</td>
+    <td><span class="chip {{ 'ok' if r.status == 'approved' else 'bad' }}">{{ 'logged' if r.status == 'approved' else 'skipped' }}</span></td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endblock %}

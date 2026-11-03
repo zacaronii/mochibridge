@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8"></head><body>
+<pre id="out">pending</pre>
+<script src="../src/tracker.js"></script>
+<script>
+  let clock = 0;
+  const t = new KBTracker(() => clock);
+  const results = {};
+  const flushed = [];
+  function run(n, state, step = 1000) {
+    for (let i = 0; i < n; i++) { clock += step; flushed.push(...t.tick(state)); }
+  }
+  const play = { videoId: "AAAAAAAAAAA", playing: true, adShowing: false, position: 0, duration: 600, title: "日本語の動画" };
+  run(1, play);                                         // first tick starts the session
+  run(60, play);                                        // 60 s playing
+  results.after_play = t.snapshot().seconds;
+  run(30, { ...play, playing: false });                 // paused 30 s
+  results.after_pause = t.snapshot().seconds;
+  run(15, { ...play, adShowing: true });                // a mid-roll ad: playing, but an ad
+  results.after_ad = t.snapshot().seconds;
+  run(10, { ...play, playing: false });                 // buffering/seeking = not playing
+  results.after_buffer = t.snapshot().seconds;
+  run(1, play, 600000);                                 // laptop slept 10 min, then one tick
+  results.after_sleep = t.snapshot().seconds;
+  const first = t.snapshot().session_id;
+  run(1, { ...play, videoId: "BBBBBBBBBBB", title: "次の動画" });   // navigated to another video
+  results.flushed = flushed.map((f) => [f.video_id, f.seconds]);
+  results.new_session = t.snapshot().session_id !== first && t.snapshot().video_id === "BBBBBBBBBBB";
+  run(20, { ...play, videoId: "BBBBBBBBBBB" });
+  run(1, { videoId: null });                            // left the watch page
+  results.flushed_after_leave = flushed.map((f) => [f.video_id, f.seconds]);
+  results.title = flushed[0].title;
+  document.getElementById("out").textContent = "RESULT " + JSON.stringify(results);
+</script>
+</body></html>

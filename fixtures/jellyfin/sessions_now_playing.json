@@ -1,0 +1,25 @@
+{
+ "Client": "kbridge-test",
+ "DeviceName": "kbridge",
+ "PlayState": {
+  "PositionTicks": 100000679,
+  "CanSeek": true,
+  "IsPaused": false,
+  "IsMuted": false,
+  "AudioStreamIndex": 3,
+  "MediaSourceId": "b71eb813ac4fc66cf831bba529a98592",
+  "PlayMethod": "DirectPlay",
+  "RepeatMode": "RepeatNone",
+  "PlaybackOrder": "Default"
+ },
+ "NowPlayingItem": {
+  "Id": "b71eb813ac4fc66cf831bba529a98592",
+  "Name": "Rainy Season",
+  "Type": "Episode",
+  "SeriesId": "67a3a72e232206956f566566eba9b1fa",
+  "SeriesName": "Tsukimi Kissa no Futari",
+  "ParentIndexNumber": 2,
+  "IndexNumber": 5,
+  "RunTimeTicks": 14470400000
+ }
+}

@@ -1,0 +1,17 @@
+[
+ {
+  "id": "f7fd8b2d-fc26-45b7-b0fb-8b8d91076163",
+  "name": "Audiobooks",
+  "mediaType": "book"
+ },
+ {
+  "id": "1f22e0b0-28cf-4b76-b414-dc40a1542a9f",
+  "name": "ポッドキャスト",
+  "mediaType": "podcast"
+ },
+ {
+  "id": "a6545b32-d6c2-440d-9327-5a320b71401c",
+  "name": "オーディオブック",
+  "mediaType": "book"
+ }
+]

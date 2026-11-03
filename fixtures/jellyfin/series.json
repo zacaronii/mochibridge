@@ -1,0 +1,169 @@
+{
+ "Name": "Tsukimi Kissa no Futari",
+ "ServerId": "<redacted>",
+ "Id": "67a3a72e232206956f566566eba9b1fa",
+ "Etag": "<redacted>",
+ "DateCreated": "2026-10-26T14:36:48.9021859Z",
+ "DateLastMediaAdded": "2026-10-25T03:17:15.3668931Z",
+ "CanDelete": true,
+ "CanDownload": false,
+ "SortName": "tsukimi kissa no futari",
+ "PremiereDate": "2026-01-11T00:00:00.0000000Z",
+ "ExternalUrls": [
+  {
+   "Name": "Shoko (s701) (g703)",
+   "Url": "https://shoko.example.invalid/webui/collection/series/701"
+  },
+  {
+   "Name": "Shoko (s702) (g703)",
+   "Url": "https://shoko.example.invalid/webui/collection/series/702"
+  },
+  {
+   "Name": "AniDB (a91234)",
+   "Url": "https://anidb.net/anime/91234"
+  }
+ ],
+ "ProductionLocations": [
+  "Japan"
+ ],
+ "Path": "<redacted>",
+ "EnableMediaSourceDisplay": true,
+ "OfficialRating": "TV-Y7",
+ "ChannelId": "<redacted>",
+ "Overview": "Hana runs a small cafe that only opens on moonlit nights. A fictional series used as test data.",
+ "Taglines": [],
+ "Genres": [
+  "Adapted From A Manga",
+  "Comedy",
+  "Romance"
+ ],
+ "CommunityRating": 8.16,
+ "PlayAccess": "Full",
+ "ProductionYear": 2026,
+ "RemoteTrailers": [],
+ "ProviderIds": {
+  "AniDB": "91234",
+  "Custom": "<redacted>",
+  "Shoko": "<redacted>",
+  "Shoko Group": "703",
+  "Shoko Series": "701"
+ },
+ "IsFolder": true,
+ "ParentId": "2f8a480ab4ed9694c5441427cb540a78",
+ "Type": "Series",
+ "People": [
+  {
+   "Name": "Aoki Haruto",
+   "Id": "61b541e0710ea398b8a6e75e290e2978",
+   "Role": "Kirishima Ren",
+   "Type": "Actor",
+   "PrimaryImageTag": "ae3a0997550169da5f3c32e10bd3bc0a",
+   "ImageBlurHashes": {
+    "Primary": {
+     "ae3a0997550169da5f3c32e10bd3bc0a": "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+    }
+   }
+  },
+  {
+   "Name": "Mizuno Hikari",
+   "Id": "bb28baf58b1902d24b6d363221639918",
+   "Role": "Hoshino Hana",
+   "Type": "Actor",
+   "PrimaryImageTag": "7867e04b490265868778ad126a37d4b8",
+   "ImageBlurHashes": {
+    "Primary": {
+     "7867e04b490265868778ad126a37d4b8": "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+    }
+   }
+  },
+  {
+   "Name": "Ishida Mei",
+   "Id": "5967e3d96ef5cfe0a8297a769cef1b5c",
+   "Role": "Kato Yui",
+   "Type": "Actor",
+   "PrimaryImageTag": "d0c72f4f6ec88d71e6649d43b33961a8",
+   "ImageBlurHashes": {
+    "Primary": {
+     "d0c72f4f6ec88d71e6649d43b33961a8": "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+    }
+   }
+  }
+ ],
+ "Studios": [
+  {
+   "Name": "Studio Alpha",
+   "Id": "75a355c77035112e7c06e9958cee1dfe"
+  },
+  {
+   "Name": "Example Media",
+   "Id": "b94ca95bfedab37309815b6ee070c12e"
+  },
+  {
+   "Name": "Kumo Animation",
+   "Id": "432845a10c4078e9817f1499f8d2b55a"
+  }
+ ],
+ "GenreItems": [
+  {
+   "Name": "Adapted From A Manga",
+   "Id": "1006772fe30a406c66844bdbf9c1196a"
+  },
+  {
+   "Name": "Comedy",
+   "Id": "d2bb8779043e0b4990915baa13a844bd"
+  },
+  {
+   "Name": "Romance",
+   "Id": "ba3629bb790b0441d025e020c4b3dbea"
+  }
+ ],
+ "LocalTrailerCount": 0,
+ "UserData": {
+  "PlayedPercentage": 66.66666666666666,
+  "UnplayedItemCount": 8,
+  "PlaybackPositionTicks": 0,
+  "PlayCount": 0,
+  "IsFavorite": false,
+  "Played": false,
+  "Key": "shoko://series/701",
+  "ItemId": "67a3a72e232206956f566566eba9b1fa"
+ },
+ "RecursiveItemCount": 24,
+ "ChildCount": 2,
+ "SpecialFeatureCount": 0,
+ "DisplayPreferencesId": "563bdf374f16d3df322fa4e2fc9405f0",
+ "Status": "Ended",
+ "AirDays": [
+  "Sunday"
+ ],
+ "Tags": [
+  "Adapted From A Manga",
+  "Asia",
+  "Autumn"
+ ],
+ "PrimaryImageAspectRatio": 0.7054673721340388,
+ "ImageTags": {
+  "Logo": "1fd81bee61e1f016a98ec7e0977d7f43",
+  "Primary": "00e8b77f43d4ccc545d493dde757bf59"
+ },
+ "BackdropImageTags": [
+  "6b3f3720711f43ca3ac5a352165d7c65"
+ ],
+ "ImageBlurHashes": {
+  "Backdrop": {
+   "6b3f3720711f43ca3ac5a352165d7c65": "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+  },
+  "Logo": {
+   "1fd81bee61e1f016a98ec7e0977d7f43": "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+  },
+  "Primary": {
+   "00e8b77f43d4ccc545d493dde757bf59": "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+  }
+ },
+ "Chapters": "<redacted>",
+ "LocationType": "FileSystem",
+ "MediaType": "Unknown",
+ "EndDate": "2026-10-04T00:00:00.0000000Z",
+ "LockedFields": [],
+ "LockData": false
+}

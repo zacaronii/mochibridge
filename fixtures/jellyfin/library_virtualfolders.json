@@ -1,0 +1,17 @@
+[
+ {
+  "Name": "Movies",
+  "CollectionType": "movies",
+  "ItemId": "527fb01c457a182fb8e6d66dee605a11"
+ },
+ {
+  "Name": "Shows",
+  "CollectionType": "tvshows",
+  "ItemId": "b5115ffb7a8fbfe11e8dbdf0d51b9123"
+ },
+ {
+  "Name": "Anime",
+  "CollectionType": "tvshows",
+  "ItemId": "7dfa7e3bef72a11005e7a20de305e96b"
+ }
+]

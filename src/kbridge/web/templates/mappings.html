@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Mappings</h1>
+<p class="muted">Which kechimochi entry each series logs to. Changing one moves its existing logs to the new entry.
+Choices are saved as overrides in <code>config.yaml</code>.</p>
+<datalist id="entries">
+  {% for m in media %}<option value="#{{ m.id }} {{ m.title }}{% if m.variant %} ({{ m.variant }}){% endif %}"></option>{% endfor %}
+</datalist>
+<div class="panel">
+<table>
+  <tr><th>Source</th><th>Series</th><th>Entry</th><th class="hide-sm">Logs</th><th>Change</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td><span class="chip">{{ r.source }}</span></td>
+    <td>{{ r.title }}
+      {% if r.status == 'needs_mapping' %}<div><span class="chip bad">needs mapping</span></div>{% endif %}
+      {% for s in r.suggestions %}<div class="small muted">close match: #{{ s.media_id }} {{ s.title }}</div>{% endfor %}
+    </td>
+    <td>
+      {% if r.status == 'linked' %}#{{ r.media_id }} {{ r.entry or '' }} <span class="small muted">({{ r.link_method or 'linked' }})</span>
+      {% elif r.status == 'pending_create' %}<span class="chip warn">new entry</span>
+      {% elif r.status == 'ignored' %}<span class="chip">ignored</span>
+      {% else %}<span class="muted">—</span>{% endif %}
+    </td>
+    <td class="num hide-sm">{{ r.logs }}</td>
+    <td>
+      <form method="post" action="/mappings" class="inline nowrap" onsubmit="const v=this.querySelector('[list]'); if (v && v.value) { const m=v.value.match(/^#(\d+)/); this.media_id.value = m ? m[1] : ''; }">
+        <input type="hidden" name="token" value="{{ token }}">
+        <input type="hidden" name="source" value="{{ r.source }}">
+        <input type="hidden" name="series_key" value="{{ r.series_key }}">
+        <input type="hidden" name="title" value="{{ r.title }}">
+        <input type="hidden" name="media_id" value="{{ r.suggestions[0].media_id if r.suggestions else '' }}">
+        <input list="entries" placeholder="{{ ('#' ~ r.suggestions[0].media_id ~ ' ' ~ r.suggestions[0].title) if r.suggestions else 'search entries…' }}" size="16">
+        <button name="action" value="link">Link</button>
+        {% if r.status != 'pending_create' %}<button name="action" value="new" title="create a new entry from the source's metadata"
+          onclick='return confirm({{ ("Create a new kechimochi entry for " ~ r.title ~ "?" ~ ((" Its " ~ r.logs ~ " logs move there.") if r.logs else ""))|tojson }})'>New</button>{% endif %}
+        {% if r.status != 'ignored' %}<button name="action" value="ignore" class="danger" title="never log this series"
+          onclick='return confirm({{ ("Stop logging " ~ r.title ~ "? Logs already in kechimochi stay.")|tojson }})'>Ignore</button>{% endif %}
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">No series yet.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

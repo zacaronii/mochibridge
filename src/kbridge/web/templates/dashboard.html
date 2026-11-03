@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Status</h1>
+<div class="grid">
+  <div class="card">
+    <div class="k">Bridge</div>
+    {% set fresh = heartbeat and (heartbeat|ago).endswith(('s ago', '1 min ago')) %}
+    <div><span class="dot {{ 'ok' if fresh and not last_error else 'bad' }}"></span>heartbeat {{ heartbeat|ago }}</div>
+    {% if last_error %}<div class="small" style="color:var(--bad)">{{ last_error }}</div>{% endif %}
+    <div class="small muted">kechimochi {{ version }}</div>
+  </div>
+  {% for s in sources %}
+  <div class="card">
+    <div class="k">{{ s.name }}</div>
+    <div class="v">{{ s.today }}<small> min today</small></div>
+    <div class="small muted">{{ s.week }} min over 7 days</div>
+    <div class="small">
+      <span class="dot {{ 'ok' if s.enabled and not s.errors else ('bad' if s.errors else '') }}"></span>
+      {% if s.enabled %}polled {{ s.polled|ago }}{% else %}not running{% endif %}
+      {% if s.pending %} · <a href="/activity?source={{ s.name }}">{{ s.pending }} pending</a>{% endif %}
+      {% if s.errors %} · <span style="color:var(--bad)">{{ s.errors }} errors</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if youtube is not none %}
+<h2>YouTube quick log</h2>
+<form method="post" action="/youtube/quick-log" class="card row">
+  <input type="hidden" name="token" value="{{ token }}">
+  <input name="url" placeholder="https://youtu.be/…" required style="flex:1 1 260px">
+  <input name="minutes" placeholder="minutes (blank = whole video)" inputmode="decimal" style="width:210px">
+  <button class="primary">Log</button>
+  <span class="small muted">
+    history reader: {% set h = youtube.history %}
+    {% if not youtube.cookies %}<span class="chip warn">no cookies</span>
+    {% elif h.state == 'ok' %}<span class="chip ok">ok</span> {{ h.ok|ago }}
+    {% elif h.state %}<span class="chip bad">{{ h.state }}</span>{% else %}<span class="chip">not run yet</span>{% endif %}
+    · extension {{ youtube.extension_seen|ago }}
+  </span>
+</form>
+{% endif %}
+
+{% if pending_reviews %}
+<div class="flash ok" style="margin-top:14px;background:var(--warn-bg);color:var(--warn)">
+  {{ pending_reviews }} session{{ 's' if pending_reviews != 1 }} waiting for your decision — <a href="/review">review</a>
+</div>
+{% endif %}
+
+<h2>Now playing</h2>
+{% if playing %}
+<div class="grid">
+  {% for p in playing %}
+  <div class="card">
+    <div class="now">
+      <div><b>{{ p.title }}</b>{% if p.episode %}<div class="small muted">{{ p.episode }}</div>{% endif %}</div>
+      <div class="small">
+        <span class="chip {{ 'warn' if p.paused else 'ok' }}">{{ 'paused' if p.paused else 'playing' }}</span>
+        <span class="chip">{{ p.audio or 'audio ?' }}</span>
+      </div>
+    </div>
+    {% if p.runtime %}<div class="progress"><div style="width:{{ (100 * p.position / p.runtime)|round(1) }}%"></div></div>{% endif %}
+    <div class="small muted" style="margin-top:4px">{{ (p.position // 60) }}:{{ '%02d' % (p.position % 60) }}{% if p.runtime %} / {{ p.runtime // 60 }}:{{ '%02d' % (p.runtime % 60) }}{% endif %} · {{ (p.counted // 60) }} min counted</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">Nothing playing on Jellyfin.</p>
+{% endif %}
+
+<h2>Recently logged</h2>
+<div class="panel">
+<table>
+  <tr><th>Date</th><th>Series</th><th class="hide-sm">Note</th><th>Min</th><th class="hide-sm">Source</th></tr>
+  {% for r in recent %}
+  <tr>
+    <td class="nowrap">{{ r.date }}</td>
+    <td>{{ r.title }}</td>
+    <td class="hide-sm note">{{ r.notes }}</td>
+    <td class="num">{{ r.duration_minutes }}</td>
+    <td class="hide-sm"><span class="chip">{{ r.source }}</span></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">Nothing logged yet.</td></tr>
+  {% endfor %}
+</table>
+</div>
+<p class="small muted">Open <a href="{{ cfg.web_kechimochi_url }}" target="_blank" rel="noopener">kechimochi</a> to see everything.</p>
+
+<h2>Activity feed</h2>
+<div class="panel">
+<table class="events">
+  {% for e in events %}
+  <tr>
+    <td>{{ e.ts|local }}</td>
+    <td>{% if e.level != 'info' %}<span class="chip {{ 'bad' if e.level == 'error' else 'warn' }}">{{ e.level }}</span> {% endif %}{% if e.source %}<span class="chip">{{ e.source }}</span> {% endif %}{{ e.message }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

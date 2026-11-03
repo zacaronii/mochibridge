@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Settings</h1>
+<p class="muted">Saved to <code>{{ cfg.path or 'config.yaml' }}</code> (your comments are kept; the previous version is kept as <code>config.yaml.bak</code>)
+and applied immediately. Mode and which sources run can only be changed in the file, followed by a restart.</p>
+{% if not writable %}<div class="flash err">No config file: settings are read-only.</div>{% endif %}
+
+<div class="card" style="margin-bottom:12px">
+  <div class="row small">
+    <span>Mode: <b>{{ 'live' if cfg.mode == 'live' else 'dry-run' }}</b></span>
+    <span class="muted">·</span>
+    <span>kechimochi: <code>{{ cfg.kechimochi_url }}</code></span>
+  </div>
+</div>
+
+<h2>General</h2>
+<form method="post" action="/settings/global" class="card">
+  <input type="hidden" name="token" value="{{ token }}">
+  <div class="fields">
+    <div class="field"><label>Minimum session (minutes)</label>
+      <input type="number" step="0.5" min="0" name="min_session_minutes" value="{{ cfg.min_session_minutes|round(1) }}" style="width:90px"></div>
+    <div class="field"><label>Very long session (hours)</label>
+      <input type="number" step="0.5" min="1" name="long_hours" value="{{ cfg.long_session_hours|round(1) }}" style="width:90px"></div>
+    <div class="field"><label>Very long sessions</label>
+      <select name="long_action">
+        {% for a in ['log', 'review'] %}<option {{ 'selected' if cfg.long_session_action == a }}>{{ a }}</option>{% endfor %}
+      </select></div>
+    <button class="primary">Save</button>
+  </div>
+</form>
+
+{% for name in ['jellyfin', 'kavita', 'abs', 'youtube'] %}
+{% set sc = cfg.source(name) %}
+{% if name == 'youtube' %}
+<h2>YouTube {% if not sc.enabled %}<span class="chip">disabled</span>{% endif %}</h2>
+<form method="post" action="/settings/source" class="card">
+  <input type="hidden" name="token" value="{{ token }}">
+  <input type="hidden" name="source" value="youtube">
+  <div class="fields">
+    <div class="field"><label>Languages (blank = any)</label>
+      <input name="languages" value="{{ (sc.languages or [])|join(',') }}" placeholder="ja" style="width:110px"></div>
+    <div class="field"><label>Videos without Japanese (kana) in title/channel</label>
+      <select name="unknown_language">{% for a in ['review', 'log', 'ignore'] %}<option {{ 'selected' if sc.unknown_language == a }}>{{ a }}</option>{% endfor %}</select></div>
+    <button class="primary">Save</button>
+  </div>
+</form>
+<div class="card" style="margin-top:8px">
+  <div class="fields">
+    <form method="post" action="/settings/youtube-cookies" enctype="multipart/form-data" class="inline">
+      <input type="hidden" name="token" value="{{ token }}">
+      <div class="field"><label>Sign-in cookies (cookies.txt of the account to track)</label>
+        <input type="file" name="file" accept=".txt,text/plain" required></div>
+      <button>Upload</button>
+    </form>
+    <div class="small">
+      {% if youtube %}
+        cookies: {{ 'saved' if youtube.cookies else 'none yet' }} ·
+        history reader: {{ youtube.history.state or 'not run yet' }}{% if youtube.history.error %} — {{ youtube.history.error }}{% endif %} ·
+        extension last seen {{ youtube.extension_seen|ago }}
+      {% endif %}
+    </div>
+  </div>
+  <p class="small" style="margin:8px 0 0">Browser extension: <a href="/download/mochibridge-chrome.zip">Chrome / Edge / Brave</a> ·
+    <a href="/download/mochibridge-firefox.zip">Firefox</a> (install steps in the README)</p>
+  <details style="margin-top:8px"><summary class="small">API token (browser extension, iOS Shortcut)</summary>
+    {% if api_token %}<code style="user-select:all">{{ api_token }}</code>{% else %}<span class="muted small">not set (web.api_token)</span>{% endif %}
+  </details>
+  <p class="small muted" style="margin-bottom:0">Accuracy: the extension measures real watch time (±15–30 s). The history reader estimates from YouTube's watched bar:
+  about ±5–10% per video watched straight through at 1×; rewinding and slow playback undercount; Incognito or history-off viewing isn't seen.</p>
+</div>
+{% else %}
+<h2>{{ {'jellyfin': 'Jellyfin', 'kavita': 'Kavita', 'abs': 'Audiobookshelf'}[name] }}
+  {% if not sc.enabled %}<span class="chip">disabled</span>{% endif %}</h2>
+<form method="post" action="/settings/source" class="card">
+  <input type="hidden" name="token" value="{{ token }}">
+  <input type="hidden" name="source" value="{{ name }}">
+  <div class="fields">
+    <div class="field"><label>Languages (blank = any)</label>
+      <input name="languages" value="{{ (sc.languages or [])|join(',') }}" placeholder="ja" style="width:110px"></div>
+    <div class="field"><label>Unknown language</label>
+      <select name="unknown_language">{% for a in ['log', 'review', 'ignore'] %}<option {{ 'selected' if sc.unknown_language == a }}>{{ a }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Libraries not listed</label>
+      <select name="default_track"><option value="false" {{ 'selected' if not sc.default_track }}>off</option><option value="true" {{ 'selected' if sc.default_track }}>tracked</option></select></div>
+    {% if name == 'jellyfin' %}
+    <div class="field"><label>Marked played, no watch data</label>
+      <select name="played_flags">{% for a in ['ignore', 'log', 'review'] %}<option {{ 'selected' if sc.extra.played_flags == a }}>{{ a }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Audio track unknown</label>
+      <select name="audio_fallback">{% for a, l in [('default', 'judge by default track'), ('any', 'count if a Japanese track exists')] %}<option value="{{ a }}" {{ 'selected' if sc.extra.audio_fallback == a }}>{{ l }}</option>{% endfor %}</select></div>
+    {% endif %}
+    {% if name == 'kavita' %}
+    <div class="field"><label>Generated sessions (bulk mark-as-read)</label>
+      <select name="generated_sessions">{% for a in ['ignore', 'log', 'review'] %}<option {{ 'selected' if sc.extra.generated_sessions == a }}>{{ a }}</option>{% endfor %}</select></div>
+    {% endif %}
+    <button class="primary">Save</button>
+  </div>
+</form>
+
+<div class="panel" style="margin-top:8px">
+<table>
+  <tr><th>Library</th><th>Track</th><th>Content type</th><th class="hide-sm">Activity</th><th class="hide-sm">Languages</th><th class="hide-sm">Unknown lang.</th><th></th></tr>
+  {% for lib in libs.get(name, []) %}
+  {% set fid = 'lib-' ~ name ~ '-' ~ loop.index %}
+  <tr>
+    <td>
+      <form id="{{ fid }}" method="post" action="/settings/library">
+        <input type="hidden" name="token" value="{{ token }}">
+        <input type="hidden" name="source" value="{{ name }}">
+        <input type="hidden" name="key" value="{{ lib.key }}">
+      </form>
+      {{ lib.name }} <span class="small muted">{{ lib.type }}</span>{% if not lib.explicit %}<div class="small muted">default</div>{% endif %}
+    </td>
+    <td><input form="{{ fid }}" type="checkbox" name="track" value="1" {{ 'checked' if lib.eff.track }}></td>
+    <td><select form="{{ fid }}" name="content_type">{% for c in content_types %}<option {{ 'selected' if lib.eff.content_type == c }}>{{ c }}</option>{% endfor %}</select></td>
+    <td class="hide-sm"><select form="{{ fid }}" name="activity_type">{% for a in activities %}<option {{ 'selected' if lib.eff.activity_type == a }}>{{ a }}</option>{% endfor %}</select></td>
+    <td class="hide-sm"><input form="{{ fid }}" name="languages" value="{{ lib.langs }}" title="inherit, any, or codes like ja,en" style="width:80px"></td>
+    <td class="hide-sm"><select form="{{ fid }}" name="unknown_language">{% for a in ['inherit', 'log', 'review', 'ignore'] %}<option {{ 'selected' if lib.unknown == a }}>{{ a }}</option>{% endfor %}</select></td>
+    <td><button form="{{ fid }}">Save</button></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7" class="muted">{% if sc.enabled %}Couldn't list libraries right now.{% else %}Source not running.{% endif %}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

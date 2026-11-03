@@ -1,0 +1,108 @@
+{
+ "total": 1340,
+ "numPages": 3,
+ "page": 0,
+ "itemsPerPage": 500,
+ "sessions": [
+  {
+   "id": "fed5bf41-67bf-423f-bfbc-a812c51ada16",
+   "userId": "<user-id>",
+   "libraryId": "1f22e0b0-28cf-4b76-b414-dc40a1542a9f",
+   "libraryItemId": "f4042f33-cbb3-420a-9159-a551fa2f37ed",
+   "bookId": null,
+   "episodeId": "90a55ad1-684f-47c8-bf2a-c5c5b41c302a",
+   "mediaType": "podcast",
+   "mediaMetadata": {
+    "title": "Byte Talk",
+    "author": "Taro Example",
+    "description": "ソフトウェア開発、道具、ガジェットなどについて話す架空のテクノロジー系ポッドキャストです。 #bytetalk",
+    "releaseDate": "2026-05-27T06:00:00Z",
+    "genres": [
+     "Technology",
+     "Podcasts"
+    ],
+    "feedUrl": "<redacted>",
+    "imageUrl": "https://example.com/images/podcast-a.jpg",
+    "itunesPageUrl": "https://podcasts.example.com/podcast/id900000001",
+    "itunesId": "900000001",
+    "itunesArtistId": "",
+    "explicit": false,
+    "language": "ja",
+    "type": "episodic"
+   },
+   "chapters": [],
+   "displayTitle": "427: Tabs vs Spaces (guest)",
+   "displayAuthor": "Taro Example",
+   "coverPath": "<redacted>",
+   "duration": 5411.330612,
+   "playMethod": 0,
+   "mediaPlayer": "Still",
+   "deviceInfo": "<redacted>",
+   "serverVersion": "2.36.1",
+   "date": "2026-11-01",
+   "dayOfWeek": "Sunday",
+   "timeListening": 43.14539650400093,
+   "startTime": 0,
+   "currentTime": 5411.34811309,
+   "startedAt": 1793543223348,
+   "updatedAt": 1793543310322
+  },
+  {
+   "id": "3302aa36-cd43-4b62-82ee-71b397a97a7a",
+   "userId": "<user-id>",
+   "libraryId": "a6545b32-d6c2-440d-9327-5a320b71401c",
+   "libraryItemId": "e018377f-1a6c-4083-8619-04faa224edf6",
+   "bookId": "8ae29e40-af72-4f7c-85d2-447286bd7b88",
+   "episodeId": null,
+   "mediaType": "book",
+   "mediaMetadata": {
+    "title": "小説　風の手紙。",
+    "subtitle": "(Example Press)",
+    "authors": [
+     {
+      "id": "ef1d85cd-5bfd-4197-84c0-f638051d4ed7",
+      "name": "青山 遥"
+     }
+    ],
+    "narrators": [
+     "森 花子"
+    ],
+    "series": [
+     {
+      "id": "b894fe70-a101-4b88-88a8-7a346e01192c",
+      "name": "青山遥作品オーディオブックプロジェクト",
+      "sequence": "青山遥作品"
+     }
+    ],
+    "genres": [
+     "現代文学"
+    ],
+    "publishedYear": "2018",
+    "publishedDate": null,
+    "publisher": "Example Press",
+    "description": "海辺の町に暮らす郵便配達員と、山あいの村に暮らす少女  風に運ばれた一通の手紙が二人をつなぐ――。  架空の物語です。",
+    "isbn": null,
+    "asin": "B0EXAMPLE1",
+    "language": "Japanese",
+    "explicit": false,
+    "abridged": false
+   },
+   "chapters": [],
+   "displayTitle": "小説　風の手紙。",
+   "displayAuthor": "青山 遥",
+   "coverPath": "<redacted>",
+   "duration": 23652.206667,
+   "playMethod": 0,
+   "mediaPlayer": "Still",
+   "deviceInfo": "<redacted>",
+   "serverVersion": "2.36.1",
+   "date": "2026-10-18",
+   "dayOfWeek": "Sunday",
+   "timeListening": 2847.519974458903,
+   "startTime": 1265.000157502,
+   "currentTime": 4069.017048368,
+   "startedAt": 1792326841666,
+   "updatedAt": 1792329683259
+  }
+ ]
+}

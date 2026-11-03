@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}mochibridge{% endblock %}</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/static/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="mochibridge">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="brand" href="/"><img src="/static/favicon.svg" alt="" width="26" height="26">mochibridge</a>
+    <nav>
+      <a href="/" class="{{ 'on' if page == 'dashboard' }}">Status</a>
+      <a href="/review" class="{{ 'on' if page == 'review' }}">Review{% if pending_reviews %}<span class="count">{{ pending_reviews }}</span>{% endif %}</a>
+      <a href="/activity" class="{{ 'on' if page == 'activity' }}">Activity</a>
+      <a href="/mappings" class="{{ 'on' if page == 'mappings' }}">Mappings</a>
+      <a href="/settings" class="{{ 'on' if page == 'settings' }}">Settings</a>
+    </nav>
+    <span class="mode {{ cfg.mode }}">{{ 'live' if cfg.mode == 'live' else 'dry-run' }}</span>
+  </div>
+</header>
+<main>
+  {% if msg %}<div class="flash ok">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="flash err">{{ err }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

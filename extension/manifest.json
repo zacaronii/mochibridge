@@ -1,0 +1,65 @@
+{
+  "manifest_version": 3,
+  "name": "mochibridge for YouTube",
+  "version": "0.3.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsveHVVxX4NM9eBChaySrzaibN5vx5CHY6MzFJktJKXWtEJ9zMYzpP9j2qx7eN9tEVgfKdOU5ukMVlJSrQ/pGMrD0p1BWbE1yD55DtsHn3FrvdkCfsnJ/tDSqLQYaeVten7Xi+PlqlmqIE6jf7Yen+7Rb8CxJn3/LvAw1VMphqFex9XKRshSD4LvZVKTRyN0yU3eZECVXRmp88jgxQz+cd1r9MCtASY7EI+f+UMdaBGmcpc1YyLaaCCQWCVXMKlGXNahjv5yJw2zGYtqP0cRuDj5niAG4fgnl6I+p2c3QAVTKb8Izs9m/fCNnSSviC2siRTj9gD4yPvlOlxreMrdHwwIDAQAB",
+  "description": "Reports real YouTube watch time (pauses and ads excluded) to your mochibridge.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "cookies"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
+      "js": [
+        "src/tracker.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
+      "js": [
+        "src/page.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "mochibridge",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

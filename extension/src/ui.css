@@ -1,0 +1,7 @@
+body { font: 13px/1.4 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; margin: 12px; color: #1c1c1a; }
+body.popup { width: 300px; }
+@media (prefers-color-scheme: dark) { body { background: #1d1d1b; color: #ecebe5; } input { background: #2a2a26; color: inherit; } }
+h1 { font-size: 15px; margin: 0 0 8px; } .brand { display: flex; align-items: center; gap: 8px; } h2 { font-size: 12px; margin: 12px 0 4px; text-transform: uppercase; color: #8a897f; }
+.muted { color: #8a897f; } .small { font-size: 11px; } .row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+button { font: inherit; padding: 4px 10px; margin-top: 6px; } label { display: block; margin: 8px 0; }
+.update { background: #fbe9e7; border: 1px solid #c0392b; border-radius: 6px; padding: 6px 8px; margin: 6px 0; font-size: 12px; }

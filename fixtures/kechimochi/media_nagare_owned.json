@@ -1,0 +1,14 @@
+{
+ "id": 28,
+ "uid": "15215218-0636-4e4b-99cc-843db055a521",
+ "title": "Tsukimi Kissa no Futari",
+ "variant": "Nagare · Jellyfin · TV Series · Japanese",
+ "default_activity_type": "Watching",
+ "status": "Active",
+ "language": "Japanese",
+ "description": "",
+ "cover_image": "",
+ "extra_data": "{\"nagare\": {\"group_key\": \"[\\\"jellyfin\\\",\\\"Tsukimi Kissa no Futari\\\",\\\"Watching\\\",\\\"TV Series\\\",\\\"Japanese\\\"]\", \"history\": [{\"audio_languages\": [\"jpn\", \"eng\"], \"duration_ms\": 1447040, \"file_path\": \"/data/media/…/redacted.mkv\", \"history_id\": \"jellyfin|7f52958ce320c17580a313877f7237cb\", \"item_id\": \"7f52958ce320c17580a313877f7237cb\", \"last_position_ms\": 1445445, \"last_seen\": \"2026-10-30T01:36:56.098Z\", \"media_source_id\": \"7f52958ce320c17580a313877f7237cb\", \"mined_notes\": 0, \"previous_watches\": [], \"series_name\": \"Tsukimi Kissa no Futari\", \"server_kind\": \"jellyfin\", \"subtitle_count\": 418, \"title\": \"Tsukimi Kissa no Futari S02E04 - First Snow\"}, {\"audio_languages\": [\"jpn\", \"eng\"], \"duration_ms\": 1447040, \"file_path\": \"/data/media/…/redacted.mkv\", \"history_id\": \"jellyfin|b71eb813ac4fc66cf831bba529a98592\", \"item_id\": \"b71eb813ac4fc66cf831bba529a98592\", \"last_position_ms\": 1230430, \"last_seen\": \"2026-11-01T13:30:08.373Z\", \"media_source_id\": \"b71eb813ac4fc66cf831bba529a98592\", \"mined_notes\": 0, \"previous_watches\": [], \"series_name\": \"Tsukimi Kissa no Futari\", \"server_kind\": \"jellyfin\", \"subtitle_count\": 423, \"title\": \"Tsukimi Kissa no Futari S02E05 - Rainy Season\"}], \"instance_id\": \"eea3db2a-a0a9-4d63-b0d6-612861c4c67c\"}}",
+ "content_type": "TV Series",
+ "tracking_status": "Ongoing"
+}

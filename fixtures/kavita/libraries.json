@@ -1,0 +1,17 @@
+[
+ {
+  "id": 2,
+  "name": "Books",
+  "type": 2
+ },
+ {
+  "id": 1,
+  "name": "Manga",
+  "type": 0
+ },
+ {
+  "id": 3,
+  "name": "漫画棚",
+  "type": 0
+ }
+]

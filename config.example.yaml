@@ -1,0 +1,93 @@
+# mochibridge configuration. Secrets come from the environment or secrets.env (${VAR}).
+timezone: UTC                    # IANA name, e.g. Asia/Tokyo: decides which day a log lands on
+mode: dry_run                    # dry_run: record what would be sent | live: write to kechimochi
+min_session_minutes: 2
+db_path: /data/bridge.sqlite
+
+kechimochi:
+  base_url: http://kechimochi:3000
+  upload_covers: true
+
+anilist_titles: true             # fetch AniList native/romaji/English titles to help match existing entries
+
+long_sessions:                   # sessions this long look like playback left running
+  hours: 4
+  action: log                    # log | review (hold for approval on the web UI's Review page)
+
+web:
+  port: 8080                     # the web UI (status, review, activity, mappings, settings)
+  api_token: ${BRIDGE_API_TOKEN} # bearer token for the browser extension and the iOS Shortcut
+  kechimochi_url: https://kechimochi.example.com   # kechimochi as your browser reaches it, for links from the UI
+
+idmap:                           # AniDB/TVDB/TMDB/IMDB -> AniList IDs, copied from anibridge (read-only)
+  anibridge_db: /anibridge/anibridge.db
+  refresh_hours: 24
+
+# Tracking rules stack: source enabled AND library tracked AND language allowed AND long enough.
+#   default_track     applies to libraries not listed (including ones added later)
+#   languages         ISO codes or names ("ja", "Japanese"); null = any language
+#   unknown_language  log | ignore | review items whose language the server doesn't know
+# Each library (keyed by name or ID) can set track, content_type, activity_type, languages, unknown_language.
+# `python -m kbridge libraries` lists every library and its effective rules.
+sources:
+  abs:
+    enabled: true
+    url: http://audiobookshelf:80
+    api_key: ${ABS_API_KEY}
+    user: ${ABS_USER}
+    poll_seconds: 60
+    default_track: false
+    languages: [ja]
+    unknown_language: log
+    libraries:
+      Podcasts (JP):    {track: true, content_type: Audio, activity_type: Listening}
+      Audiobooks (JP):  {track: true, content_type: Audio, activity_type: Listening}
+      Audiobooks:       {track: false}
+
+  kavita:
+    enabled: true
+    url: http://kavita:5000
+    api_key: ${KAVITA_API_KEY}
+    user: ${KAVITA_USER}
+    poll_seconds: 300
+    default_track: false
+    languages: [ja]
+    generated_sessions: ignore   # sessions Kavita invents from bulk "mark as read": ignore | log | review
+    libraries:
+      Manga (JP):   {track: true, content_type: Manga, activity_type: Reading}
+      Light Novels: {track: true, content_type: Novel, activity_type: Reading}
+      Manga:        {track: false}
+      Books:        {track: false}
+
+  jellyfin:                      # language = the audio track actually played
+    enabled: true
+    # nagare_db: /nagare/nagare.sqlite   # optional: Nagare's records, for Jellyfin history before the bridge
+    play_gap_minutes: 5          # silence longer than this ends a play
+    plugin_poll_seconds: 300     # Playback Reporting backstop for plays the sampler missed (bridge down)
+    nagare_until: null           # use Nagare's records up to this time (ISO); set when live Jellyfin tracking takes over
+    played_flags: ignore         # marked played with no watch data: ignore | log | review (runtime estimate)
+    audio_fallback: default          # only when the played track is unknown (Nagare history, unsampled plays):
+                                 # default = judge by the default track, any = count it if it has an allowed-language track
+                                 # (live plays use the audio track actually selected, from /Sessions)
+    url: http://jellyfin:8096
+    api_key: ${JELLYFIN_API_KEY}
+    user: ${JELLYFIN_USER}
+    poll_seconds: 15             # /Sessions sampling: watched time = playback position actually moving
+    default_track: false
+    languages: [ja]
+    libraries:
+      Anime:  {track: true, content_type: Anime, activity_type: Watching}
+      Shows:  {track: true, content_type: Drama, activity_type: Watching}
+      Movies: {track: true, content_type: Movie, activity_type: Watching}
+
+  youtube:                       # watch history (unofficial, needs the account's cookies), browser extension, share sheet
+    enabled: true
+    languages: [ja]              # Japanese = kana in the title or channel name
+    unknown_language: review     # other videos wait on the Review page
+    history_poll_minutes: 10
+    history_min_bar: half        # first sighting at YouTube's 10% minimum bar: half (5%) | full | review | ignore
+    # cookies_path: /data/youtube-cookies.txt   (uploaded on the Settings page)
+
+overrides:
+  map: []      # - {source: abs, series_key: "podcast:<libraryItemId>", media_id: 42}
+  ignore: []   # - {source: abs, series_key: "book:<libraryItemId>"}

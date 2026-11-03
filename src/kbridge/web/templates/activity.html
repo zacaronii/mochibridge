@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Activity</h1>
+<div class="tabs">
+  <a href="?show=logs&source={{ source }}" class="{{ 'on' if show == 'logs' }}">Logs</a>
+  <a href="?show=skips&source={{ source }}" class="{{ 'on' if show == 'skips' }}">Skipped sessions</a>
+</div>
+<form class="filters" method="get">
+  <input type="hidden" name="show" value="{{ show }}">
+  <select name="source" onchange="this.form.submit()">
+    <option value="">All sources</option>
+    {% for s in ['jellyfin', 'kavita', 'abs', 'youtube'] %}<option {{ 'selected' if s == source }}>{{ s }}</option>{% endfor %}
+  </select>
+  {% if show == 'skips' %}
+  <select name="reason" onchange="this.form.submit()">
+    <option value="">All reasons</option>
+    {% for r in reasons %}<option value="{{ r }}" {{ 'selected' if r == reason }}>{{ r }}</option>{% endfor %}
+  </select>
+  {% endif %}
+</form>
+
+{% if show == 'logs' %}
+<div class="panel">
+<table>
+  <tr><th>Date</th><th>Series</th><th class="hide-sm">Note</th><th>Min</th><th class="hide-sm">Source</th><th>Status</th></tr>
+  {% for l in logs %}
+  <tr>
+    <td class="nowrap">{{ l.date }}</td>
+    <td>{{ l.title }}</td>
+    <td class="hide-sm note">{{ l.notes }}</td>
+    <td class="num">{{ l.duration_minutes }}</td>
+    <td class="hide-sm"><span class="chip">{{ l.source }}</span></td>
+    <td><span class="chip {{ {'synced': 'ok', 'error': 'bad'}.get(l.status, 'warn') }}" title="{{ l.error or '' }}">{{ l.status }}</span></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="muted">No logs.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<p class="small muted">Sessions the rules skipped. <b>Log anyway</b> sends one to kechimochi (and keeps logging it if it grows).</p>
+<div class="panel">
+<table>
+  <tr><th>Date</th><th>Title</th><th class="hide-sm">Note</th><th>Min</th><th>Why</th><th></th></tr>
+  {% for s in skips %}
+  <tr>
+    <td class="nowrap">{{ s.meta.date or '' }}</td>
+    <td>{{ s.meta.series or s.meta.title or s.detail }}</td>
+    <td class="hide-sm note">{{ s.meta.note or '' }}</td>
+    <td class="num">{{ (s.meta.minutes or 0)|round|int }}</td>
+    <td><span class="chip">{{ s.reason }}</span></td>
+    <td>{% if s.event_json %}
+      <form method="post" action="/activity/log-anyway" class="inline">
+        <input type="hidden" name="token" value="{{ token }}">
+        <input type="hidden" name="key" value='{{ [s.source, s.session_id, s.item_key]|tojson }}'>
+        <button>Log anyway</button>
+      </form>{% endif %}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="muted">Nothing skipped.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endblock %}
