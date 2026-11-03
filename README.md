@@ -11,7 +11,7 @@ an iOS Shortcut feed it YouTube viewing.
 
 | Source | Where the time comes from | Entry |
 |---|---|---|
-| **Jellyfin** | `/Sessions` sampled every 15 s. Time counts only while the playback position moves *and* the audio track being played is in an allowed language. Resumed fragments are joined into one play. The Playback Reporting plugin is a backstop for plays the sampler missed | One per series (or movie), with AniList IDs from anibridge's mapping DB when available |
+| **Jellyfin** | `/Sessions` sampled every 15 s. Time counts only while the playback position moves *and* the audio track being played is in an allowed language. Resumed fragments are joined into one play. The Playback Reporting plugin is a backstop for plays the sampler missed | One per series (or movie), with AniList IDs from [anibridge](https://github.com/anibridge/anibridge)'s mapping DB when available |
 | **Kavita** | Reading history: one log per reading session and chapter. Sessions Kavita invents from bulk "mark as read" are ignored by default | One per series |
 | **Audiobookshelf** | Your listening sessions | One per podcast or book |
 | **YouTube** | See [YouTube](#youtube) below | One per channel |
@@ -91,7 +91,7 @@ and `jellyfin-golive` (mark the moment live Jellyfin tracking takes over from Na
 
 ### Moving over from Nagare
 
-If Nagare's kechimochi sync has been logging for you, the bridge can replace it
+If [Nagare](https://github.com/bpwhelan/Nagare)'s kechimochi sync has been logging for you, the bridge can replace it
 without duplicates:
 
 ```sh
@@ -118,3 +118,20 @@ scripts/kechimochi-test.sh down
 ```
 
 The fixtures in `fixtures/` have the shape of real API responses but contain fictional data.
+
+## Acknowledgements
+
+mochibridge is glue between other people's work. Thank you to:
+
+- **[kechimochi](https://github.com/Morgawr/kechimochi)** by Morgawr: the immersion tracker this whole project feeds, and the HTTP API that makes it possible.
+- **[Nagare](https://github.com/bpwhelan/Nagare)** by bpwhelan: its kechimochi sync came first and showed what this could be. mochibridge reads its records to carry Jellyfin history over and migrates its entries without duplicates.
+- **[anibridge](https://github.com/anibridge/anibridge)** and **[anibridge-mappings](https://github.com/anibridge/anibridge-mappings)**: the AniDB/TVDB/TMDB/IMDB → AniList ID map behind series matching.
+- **[AniList](https://anilist.co)**: its public GraphQL API provides the native, romaji and English titles used to match existing entries.
+- **[Jellyfin](https://github.com/jellyfin/jellyfin)** and its **[Playback Reporting](https://github.com/jellyfin/jellyfin-plugin-playbackreporting)** plugin, **[Shokofin](https://github.com/ShokoAnime/Shokofin)** / [Shoko](https://shokoanime.com), **[Kavita](https://github.com/Kareadita/Kavita)** and **[Audiobookshelf](https://github.com/advplyr/audiobookshelf)**: the servers whose APIs it reads.
+- The Python libraries it's built on: [HTTPX](https://www.python-httpx.org), [FastAPI](https://fastapi.tiangolo.com), [Uvicorn](https://www.uvicorn.org), [Jinja](https://jinja.palletsprojects.com), [ruamel.yaml](https://sourceforge.net/projects/ruamel-yaml/), [PyYAML](https://pyyaml.org) and [python-multipart](https://github.com/Kludex/python-multipart), with [pytest](https://pytest.org) and [RESPX](https://lundberg.github.io/respx/) for tests.
+
+mochibridge isn't affiliated with any of these projects, or with YouTube or Google. The YouTube history reader uses an unofficial page and may stop working whenever YouTube changes it.
+
+## License
+
+[MIT](LICENSE)

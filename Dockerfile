@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
-COPY pyproject.toml ./
+COPY pyproject.toml LICENSE ./
 COPY src ./src
 RUN pip install --no-cache-dir . && rm -rf /root/.cache
 # The browser extension zips offered on the Settings page (and the version behind its update badge).
