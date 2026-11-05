@@ -128,6 +128,30 @@ async def test_ten_percent_first_sighting_logs_half_capped():
     assert "min_bar" in json.loads(b.db.one("SELECT meta_json FROM logs")["meta_json"])["flags"]
 
 
+async def test_min_bar_viewing_counts_up_to_the_real_position():
+    """Seen at the 10% minimum, then at 24% ten minutes later (a real case): the viewing is 24% of the video,
+    not the 5% guess plus 14%."""
+    b, km, r = make()
+    await step(b, r, [item("old00000001", 40)], T0)
+    await step(b, r, [item("grows000001", 10, length=870), item("old00000001", 40)], T0 + timedelta(minutes=10))
+    await step(b, r, [item("grows000001", 24, length=870), item("old00000001", 40)], T0 + timedelta(minutes=20))
+    (log,) = km.logs.values()
+    assert log["duration_minutes"] == round(0.24 * 870 / 60)
+    assert b.db.one("SELECT cur_seconds FROM yt_history WHERE video_id='grows000001'")["cur_seconds"] \
+        == pytest.approx(0.24 * 870)
+
+
+async def test_skipped_min_bar_guess_is_folded_into_the_later_viewing():
+    """10% (guess too short, skipped), then finished 90 min later: one log for the whole video (a real case)."""
+    b, km, r = make()
+    await step(b, r, [item("old00000001", 40)], T0)
+    await step(b, r, [item("later000001", 10, length=877), item("old00000001", 40)], T0 + timedelta(minutes=10))
+    assert not km.logs
+    await step(b, r, [item("later000001", 100, length=877), item("old00000001", 40)], T0 + timedelta(minutes=100))
+    (log,) = km.logs.values()
+    assert log["duration_minutes"] == round(877 / 60)
+
+
 @pytest.mark.parametrize("mode,expect_logs,expect_review", [("review", 0, 1), ("ignore", 0, 0), ("full", 1, 0)])
 async def test_min_bar_modes(mode, expect_logs, expect_review):
     b, km, r = make()

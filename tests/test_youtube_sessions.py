@@ -93,6 +93,12 @@ def test_api_auth_progress_log_and_cookies(tmp_path):
     b.db.set_cursor("youtube", "history_checked", "2026-11-02T23:14:00+00:00")
     assert c.post("/api/youtube/cookies", json={"cookies": ck}, headers=auth).json() == {"ok": True}
     assert b.db.get_cursor("youtube", "history_checked") is None     # signed out -> re-read at the next poll
+    b.db.set_cursor("youtube", "history_state", "ok")
+    for _ in range(3):                                                   # routine rotations: counted, not logged
+        assert c.post("/api/youtube/cookies", json={"cookies": ck}, headers=auth).json() == {"ok": True}
+    feed = [r["message"] for r in b.db.all("SELECT message FROM events WHERE source='youtube'")]
+    assert feed == ["YouTube sign-in refreshed by the extension (history reader was signed_out)"]
+    assert c.get("/api/youtube/status", headers=auth).json()["shares_today"] == 4
     p = tmp_path / "youtube-cookies.txt"
     assert "SAPISID\tabc" in p.read_text() and oct(p.stat().st_mode & 0o777) == "0o600"
     assert c.get("/api/youtube/status", headers=auth).json()["cookies"] is True

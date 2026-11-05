@@ -37,6 +37,7 @@
     {% elif h.state == 'ok' %}<span class="chip ok">ok</span> {{ h.ok|ago }}
     {% elif h.state %}<span class="chip bad">{{ h.state }}</span>{% else %}<span class="chip">not run yet</span>{% endif %}
     · extension {{ youtube.extension_seen|ago }}
+    {% if youtube.cookies_shared %}· sign-in kept fresh {{ youtube.cookies_shared|ago }} ({{ youtube.shares_today }} today){% endif %}
   </span>
 </form>
 {% endif %}

@@ -152,6 +152,7 @@ class Config:
     min_session_minutes: float = 2
     db_path: str = "/data/bridge.sqlite"
     kechimochi_url: str = "http://kechimochi:3000"
+    kechimochi_url_from: str = "default"      # default | config | KECHIMOCHI_URL (shown on the Settings page)
     upload_covers: bool = True
     idmap_db: str | None = None
     idmap_refresh_hours: float = 24
@@ -211,7 +212,8 @@ def _source(name: str, raw: dict[str, Any]) -> SourceConfig:
 
 
 def parse(raw: dict[str, Any], env: dict[str, str] | None = None) -> Config:
-    raw = _substitute(raw or {}, env if env is not None else dict(os.environ))
+    env = env if env is not None else dict(os.environ)
+    raw = _substitute(raw or {}, env)
     mode = raw.get("mode", "dry_run")
     if mode not in ("dry_run", "live"):
         raise ConfigError("mode must be 'dry_run' or 'live'")
@@ -228,7 +230,10 @@ def parse(raw: dict[str, Any], env: dict[str, str] | None = None) -> Config:
         mode=mode,
         min_session_minutes=float(raw.get("min_session_minutes", 2)),
         db_path=raw.get("db_path", "/data/bridge.sqlite"),
-        kechimochi_url=str(k.get("base_url", "http://kechimochi:3000")).rstrip("/"),
+        # KECHIMOCHI_URL / KECHIMOCHI_PUBLIC_URL override the file, so a container can be pointed elsewhere.
+        kechimochi_url=str(env.get("KECHIMOCHI_URL") or k.get("base_url", "http://kechimochi:3000")).rstrip("/"),
+        kechimochi_url_from="KECHIMOCHI_URL" if env.get("KECHIMOCHI_URL") else "config" if k.get("base_url")
+        else "default",
         upload_covers=bool(k.get("upload_covers", True)),
         idmap_db=idm.get("anibridge_db"),
         idmap_refresh_hours=float(idm.get("refresh_hours", 24)),
@@ -237,8 +242,8 @@ def parse(raw: dict[str, Any], env: dict[str, str] | None = None) -> Config:
         long_session_hours=float((raw.get("long_sessions") or {}).get("hours", bf.get("long_session_hours", 4))),
         long_session_action=str((raw.get("long_sessions") or {}).get("action", "log")),
         web_port=int((raw.get("web") or {}).get("port", 8080)),
-        web_kechimochi_url=str((raw.get("web") or {}).get("kechimochi_url")
-                               or k.get("base_url", "http://kechimochi:3000")).rstrip("/"),
+        web_kechimochi_url=str(env.get("KECHIMOCHI_PUBLIC_URL") or (raw.get("web") or {}).get("kechimochi_url")
+                               or env.get("KECHIMOCHI_URL") or k.get("base_url", "http://kechimochi:3000")).rstrip("/"),
         web_api_token=(str((raw.get("web") or {}).get("api_token") or "").strip() or None),
         sources={name: _source(name, sources_raw.get(name) or {}) for name in SOURCES},
         override_map=list(ov.get("map") or []),

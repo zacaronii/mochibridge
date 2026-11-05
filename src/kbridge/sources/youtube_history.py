@@ -308,7 +308,11 @@ class HistoryReader:
                     if mode != "ignore":
                         delta = min(delta, MIN_BAR_MAX.total_seconds())
             elif pos is not None and row["position"] is not None:
-                if pos > row["position"] + 5:
+                if self._min_bar_resolved(it, row):
+                    # First seen at YouTube's 10% minimum, now past it: the real position is finally known, so the
+                    # viewing counts up to it (from the start) instead of the guess plus the growth beyond 10%.
+                    delta = pos - self._credited(row, now, section_date(it.section, today))
+                elif pos > row["position"] + 5:
                     delta = pos - row["position"]
                 elif pos < row["position"] - 60:
                     delta, flags = pos, ["rewatch"]
@@ -331,6 +335,29 @@ class HistoryReader:
             self.db.event("info", "youtube", f"history reader: baseline of {len(seen)} videos recorded (nothing logged)")
         return out
 
+    @staticmethod
+    def _continues(row, now: datetime, day: date) -> bool:
+        """Is a change to this video part of its current viewing (one log that grows)?"""
+        last_change = parse_iso(row["last_change"]) if row is not None and row["last_change"] else None
+        return bool(row is not None and row["cur_session"] and last_change and now - last_change <= VIEWING_GAP
+                    and (row["cur_date"] or "") == day.isoformat())
+
+    @staticmethod
+    def _min_bar_resolved(it: HistoryItem, row) -> bool:
+        """The video's only viewing began at the 10% minimum bar, and the bar has now passed it."""
+        return (row["viewings"] == 1 and (row["cur_session"] or "").endswith(":1")
+                and row["percent"] is not None and row["percent"] <= MIN_BAR_PERCENT
+                and it.percent is not None and it.percent > MIN_BAR_PERCENT)
+
+    def _credited(self, row, now: datetime, day: date) -> float:
+        """Seconds of this video already counted: the current viewing grows to the new total; a finished one
+        counts only if it was logged (a too-short guess that was skipped is folded into the new viewing)."""
+        if self._continues(row, now, day):
+            return float(row["cur_seconds"] or 0)
+        logged = self.db.one("SELECT 1 FROM logs WHERE source='youtube' AND session_id=? AND retracted=0",
+                             (f"yt:{row['cur_session']}",))
+        return float(row["cur_seconds"] or 0) if logged else 0.0
+
     def _store(self, it: HistoryItem, pos: float | None, rank: int, now: datetime, row, changed: bool) -> None:
         self.db.execute(
             "INSERT INTO yt_history(video_id, percent, position, length, first_seen, last_seen, last_change, top_rank)"
@@ -345,11 +372,9 @@ class HistoryReader:
         tz = ZoneInfo(self.cfg.timezone)
         day = section_date(it.section, today)
         # Continue the current viewing (one log that grows) or start a new one.
-        cur = row["cur_session"] if row is not None else None
-        last_change = parse_iso(row["last_change"]) if row is not None and row["last_change"] else None
-        if (cur and last_change and now - last_change <= VIEWING_GAP and "rewatch" not in flags
-                and (row["cur_date"] or "") == day.isoformat()):
-            session, seconds, started = cur, float(row["cur_seconds"] or 0) + delta, parse_iso(row["cur_started"])
+        if self._continues(row, now, day) and "rewatch" not in flags:
+            session, seconds, started = row["cur_session"], float(row["cur_seconds"] or 0) + delta, \
+                parse_iso(row["cur_started"])
         else:
             n = (row["viewings"] or 0) + 1 if row is not None else 1
             session, seconds = f"yth:{it.video_id}:{n}", delta

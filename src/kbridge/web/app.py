@@ -23,7 +23,7 @@ from fastapi.templating import Jinja2Templates
 
 from .. import settings
 from ..config import _INHERIT, ConfigError
-from ..db import parse_iso, utcnow
+from ..db import iso, parse_iso, utcnow
 from ..service import Bridge
 from ..sources.jfplays import watched_by_language
 
@@ -392,7 +392,7 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
                 bridge.db.set_cursor("youtube", "auth_user", str(int(body["session_index"])))
         else:
             text = (await request.body()).decode("utf-8", "replace")
-        write_cookies(text)
+        write_cookies(text, from_extension=True)
         if bridge.db.get_cursor("youtube", "history_state") != "ok":   # retry now rather than at the next 10-min slot
             bridge.db.set_cursor("youtube", "history_checked", None)
         return {"ok": True}
@@ -407,6 +407,8 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
         return {"history": {k: db.get_cursor("youtube", f"history_{k}") for k in ("state", "checked", "ok", "error")},
                 "extension_seen": db.get_cursor("youtube", "extension_seen"),
                 "cookies": cookies_path().exists(),
+                "cookies_shared": db.get_cursor("youtube", "cookies_shared"),
+                "shares_today": shares_today(),
                 "extension_latest": extension_latest()}
 
     def extension_zip(name: str) -> Path:
@@ -429,7 +431,12 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
         sc = bridge.cfg.source("youtube")
         return Path(sc.extra.get("cookies_path") or Path(bridge.cfg.db_path).parent / "youtube-cookies.txt")
 
-    def write_cookies(text: str) -> None:
+    def shares_today() -> int:
+        day = datetime.now(ZoneInfo(bridge.cfg.timezone)).date().isoformat()
+        counted = json.loads(bridge.db.get_cursor("youtube", "cookies_shares") or "{}")
+        return int(counted.get("n", 0)) if counted.get("day") == day else 0
+
+    def write_cookies(text: str, from_extension: bool = False) -> None:
         lines = [l for l in text.splitlines() if l.strip() and (l.startswith("#HttpOnly_") or not l.startswith("#"))]
         if not lines or not any("youtube.com" in l or "google.com" in l for l in lines):
             raise HTTPException(400, "that isn't a cookies.txt for youtube.com")
@@ -438,7 +445,21 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
         tmp.write_text("# Netscape HTTP Cookie File\n" + "\n".join(lines) + "\n", encoding="utf-8")
         tmp.chmod(0o600)
         tmp.replace(p)
-        bridge.db.event("info", "youtube", "YouTube sign-in cookies updated")
+        if not from_extension:
+            bridge.db.event("info", "youtube", "YouTube sign-in cookies uploaded")
+            return
+        # The extension re-shares whenever Google rotates the cookies (every few minutes while YouTube is open).
+        # Those routine refreshes are counted for the Status page; only one that rescues a signed-out reader
+        # (or the first share) goes to the activity feed.
+        db = bridge.db
+        first = db.get_cursor("youtube", "cookies_shared") is None
+        db.set_cursor("youtube", "cookies_shared", iso(utcnow()))
+        db.set_cursor("youtube", "cookies_shares", json.dumps({
+            "day": datetime.now(ZoneInfo(bridge.cfg.timezone)).date().isoformat(), "n": shares_today() + 1}))
+        state = db.get_cursor("youtube", "history_state")
+        if first or state not in (None, "ok"):
+            db.event("info", "youtube", "YouTube sign-in refreshed by the extension"
+                     + (f" (history reader was {state})" if state not in (None, "ok") else ""))
 
     @app.post("/youtube/quick-log")
     async def yt_quick_log(request: Request, token_: str = Form(alias="token"), url: str = Form(...),

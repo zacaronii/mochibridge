@@ -10,7 +10,9 @@
 2. Put the bridge on the Docker network(s) where kechimochi and your media servers run (`networks:` in the compose
    file), so it reaches them by container name.
 3. Copy `../config.example.yaml` to `${APPDATA}/mochibridge/config.yaml` and adjust it:
-   - server URLs, `timezone`, and `web.kechimochi_url` (kechimochi as your browser reaches it);
+   - server URLs, `timezone`, and `web.kechimochi_url` (kechimochi as your browser reaches it). The kechimochi
+     addresses can instead come from the `KECHIMOCHI_URL` / `KECHIMOCHI_PUBLIC_URL` environment variables, which
+     override the file;
    - the libraries you want tracked; `kbridge libraries` lists them all.
    
    Keep `mode: dry_run` for now.

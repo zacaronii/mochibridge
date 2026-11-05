@@ -93,3 +93,14 @@ def test_switch_validation():
     assert c.source("jellyfin").extra["played_flags"] == "ignore"
     assert c.source("kavita").extra["generated_sessions"] == "ignore"
     assert c.source("jellyfin").extra["audio_fallback"] == "default"
+
+
+def test_kechimochi_url_environment_overrides():
+    raw = {"kechimochi": {"base_url": "http://kechimochi:3000"}, "web": {"kechimochi_url": "https://k.example.com"}}
+    cfg = config.parse(raw, {})
+    assert (cfg.kechimochi_url, cfg.kechimochi_url_from, cfg.web_kechimochi_url) == \
+        ("http://kechimochi:3000", "config", "https://k.example.com")
+    cfg = config.parse(raw, {"KECHIMOCHI_URL": "http://other:3000/", "KECHIMOCHI_PUBLIC_URL": "https://o.example.com"})
+    assert (cfg.kechimochi_url, cfg.kechimochi_url_from, cfg.web_kechimochi_url) == \
+        ("http://other:3000", "KECHIMOCHI_URL", "https://o.example.com")
+    assert config.parse({}, {"KECHIMOCHI_URL": "http://other:3000"}).web_kechimochi_url == "http://other:3000"

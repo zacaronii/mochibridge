@@ -11,6 +11,11 @@ and applied immediately. Mode and which sources run can only be changed in the f
     <span class="muted">·</span>
     <span>kechimochi: <code>{{ cfg.kechimochi_url }}</code></span>
   </div>
+  <div class="small muted">
+    {% if cfg.kechimochi_url_from == 'KECHIMOCHI_URL' %}Set by the <code>KECHIMOCHI_URL</code> environment variable.
+    {% else %}Set in <code>config.yaml</code> (<code>kechimochi.base_url</code>){% if cfg.kechimochi_url_from == 'default' %}, using the default{% endif %}; the <code>KECHIMOCHI_URL</code> environment variable overrides it.{% endif %}
+    Change it there and restart. The bridge's records belong to one kechimochi, so point it at a different instance only on purpose.
+  </div>
 </div>
 
 <h2>General</h2>

@@ -13,7 +13,9 @@ async function render() {
   $("shareCookies").checked = !!s.shareCookies;
   const info = await activeTabInfo();
   const acct = info && info.account && info.account.account;
-  $("account").textContent = !s.trackedAccount ? "No account tracked yet."
+  $("account").className = s.trackedAccount ? "muted" : "update";
+  $("account").textContent = !s.trackedAccount
+    ? "No account tracked yet: viewing isn't reported until you open youtube.com and click Track this account."
     : acct ? (acct === s.trackedAccount ? "This tab: the tracked account ✓" : "This tab: a different account (not tracked)")
     : "Tracked account set.";
   $("track").disabled = !acct;

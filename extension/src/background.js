@@ -96,9 +96,21 @@ async function checkUpdate(st) {
   const latest = st && st.extension_latest;
   const update = latest && newer(latest, api.runtime.getManifest().version) ? latest : null;
   await api.storage.local.set({ updateAvailable: update });
-  await api.action.setBadgeText({ text: update ? "↑" : "" });
-  if (update) await api.action.setBadgeBackgroundColor({ color: "#c0392b" });
+  await badge();
 }
+
+// One badge for both warnings: ↑ = update available, ! = no account tracked (nothing is reported until one is).
+async function badge() {
+  const { updateAvailable, trackedAccount, enabled } = await api.storage.local.get(
+    ["updateAvailable", "trackedAccount", "enabled"]);
+  const text = updateAvailable ? "↑" : enabled !== false && !trackedAccount ? "!" : "";
+  await api.action.setBadgeText({ text });
+  if (text) await api.action.setBadgeBackgroundColor({ color: updateAvailable ? "#c0392b" : "#d68910" });
+}
+
+api.storage.onChanged.addListener((changes) => {
+  if ("trackedAccount" in changes || "enabled" in changes) badge().catch(() => {});
+});
 
 api.runtime.onStartup.addListener(() => checkUpdate().catch(() => {}));
 api.runtime.onInstalled.addListener(() => checkUpdate().catch(() => {}));
