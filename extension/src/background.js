@@ -62,14 +62,16 @@ async function handleProgress(msg) {
 async function shareCookies(force) {
   const s = await settings();
   if (!s.shareCookies && !force) return;
+  // The bridge reads that account's history, so it needs to know which one (and refuses others).
+  if (!s.trackedAccount) throw new Error("no account tracked yet: open youtube.com and click Track this account");
   if (!force && Date.now() - s.lastCookieShare < 20 * 3600 * 1000) {
     const st = await call("/api/youtube/status").catch(() => null);
-    if (!st || (st.cookies && st.history && st.history.state !== "signed_out")) return;
+    if (!st || (st.cookies && st.history && !["signed_out", "wrong_account"].includes(st.history.state))) return;
   }
   const cookies = await api.cookies.getAll({ domain: "youtube.com" });
   const { lastSessionIndex } = await api.storage.local.get("lastSessionIndex");
   await call("/api/youtube/cookies", { method: "POST",
-    body: JSON.stringify({ cookies, session_index: lastSessionIndex ?? null }) });
+    body: JSON.stringify({ cookies, session_index: lastSessionIndex ?? null, account: s.trackedAccount }) });
   await api.storage.local.set({ lastCookieShare: Date.now() });
 }
 

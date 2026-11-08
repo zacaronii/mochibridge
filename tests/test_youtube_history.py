@@ -226,3 +226,44 @@ async def test_extension_arriving_after_history_replaces_the_estimate():
     # later history progress for that viewing is not logged again
     await step(b, r, [item("raced000001", 70), item("old00000001", 40)], t1 + timedelta(minutes=20))
     assert [l["duration_minutes"] for l in km.logs.values()] == [7]
+
+
+def _reader_with_accounts(tmp_path, accounts):
+    """A history reader whose fake YouTube serves account `accounts[i]` for X-Goog-AuthUser i."""
+    import httpx
+    initial = FIX.read_text().strip()
+    def handler(request):
+        i = int(request.headers.get("x-goog-authuser", "0"))
+        if i >= len(accounts):
+            return httpx.Response(302, headers={"location": "https://accounts.google.com/ServiceLogin"})
+        html = (f'<script>ytcfg.set({{"LOGGED_IN":true,"DATASYNC_ID":"{accounts[i]}","SESSION_INDEX":"{i}"}});</script>'
+                f'<script>var ytInitialData = {initial};</script>')
+        return httpx.Response(200, text=html, request=request)
+    jar = tmp_path / "cookies.txt"
+    jar.write_text("# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t1893456000\tSID\tx\n")
+    b, km, r = make()
+    r.cookies_path = jar
+    r.client = httpx.AsyncClient(transport=httpx.MockTransport(handler), follow_redirects=False)
+    return b, r
+
+
+async def test_history_follows_the_tracked_account_between_signed_in_accounts(tmp_path):
+    b, r = _reader_with_accounts(tmp_path, ["english||", "japanese||"])
+    r.db.set_cursor("youtube", "tracked_account", "japanese||")
+    r.db.set_cursor("youtube", "auth_user", "0")                   # the browser switched accounts
+    assert await r.fetch()
+    assert r.db.get_cursor("youtube", "auth_user") == "1"
+
+
+async def test_history_refuses_cookies_without_the_tracked_account(tmp_path):
+    b, r = _reader_with_accounts(tmp_path, ["english||"])
+    r.db.set_cursor("youtube", "tracked_account", "japanese||")
+    assert await r.poll(T0, T0) == []
+    assert r.db.get_cursor("youtube", "history_state") == "wrong_account"
+    assert r.db.get_cursor("youtube", "history_ok") is None          # the gap is caught up once it's fixed
+    assert not r.db.all("SELECT * FROM yt_history")
+
+
+async def test_history_without_a_known_account_reads_as_before(tmp_path):
+    b, r = _reader_with_accounts(tmp_path, ["english||"])
+    assert await r.fetch()

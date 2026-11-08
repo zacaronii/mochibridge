@@ -28,6 +28,8 @@ from .youtube import HEADERS, LIBRARY, YouTubeMeta, channel_meta, language_of
 log = logging.getLogger(__name__)
 _INITIAL = re.compile(r"var ytInitialData\s*=\s*(\{.+?\});\s*</script>", re.S)
 _LOGGED_IN = re.compile(r'"LOGGED_IN"\s*:\s*(true|false)')
+_DATASYNC = re.compile(r'"DATASYNC_ID"\s*:\s*"([^"]*)"')
+MAX_AUTH_USERS = 4                       # signed-in Google accounts tried when looking for the tracked one
 VIEWING_GAP = timedelta(minutes=45)      # later progress within this continues the same viewing (same log)
 MIN_BAR_PERCENT = 10                     # YouTube shows at least 10% once a video is started (e.g. 2 min of a
                                          # 29-min video shows as 10%)
@@ -38,6 +40,10 @@ WEEKDAYS = {d: i for i, d in enumerate(["monday", "tuesday", "wednesday", "thurs
 
 class SignedOut(Exception):
     pass
+
+
+class WrongAccount(Exception):
+    """The cookies are signed in, but not as the account the extension tracks."""
 
 
 class FormatChanged(Exception):
@@ -218,24 +224,50 @@ class HistoryReader:
             cookies.set(c.name, c.value, domain=c.domain, path=c.path)
         return cookies
 
-    async def fetch(self) -> list[HistoryItem]:
-        if not self.cookies_path.exists():
-            raise SignedOut("no cookies uploaded yet")
+    async def _page(self, client: httpx.AsyncClient, cookies: httpx.Cookies, auth_user: str | None) -> str:
         headers = dict(HEADERS, **{"Accept-Language": "en"})
-        auth_user = self.db.get_cursor("youtube", "auth_user")
         if auth_user:
             headers["X-Goog-AuthUser"] = auth_user
-        client = self.client or httpx.AsyncClient(timeout=30, follow_redirects=True)
-        try:
-            r = await client.get("https://www.youtube.com/feed/history", params={"hl": "en"},
-                                 headers=headers, cookies=self._cookies())
-        finally:
-            if self.client is None:
-                await client.aclose()
+        r = await client.get("https://www.youtube.com/feed/history", params={"hl": "en"}, headers=headers,
+                             cookies=cookies)
         if "accounts.google.com" in str(r.url.host) or r.status_code in (401, 403):
             raise SignedOut("redirected to sign-in")
         r.raise_for_status()
-        items = parse_history(extract(r.text))
+        return r.text
+
+    async def fetch(self) -> list[HistoryItem]:
+        if not self.cookies_path.exists():
+            raise SignedOut("no cookies uploaded yet")
+        cookies = self._cookies()
+        auth_user = self.db.get_cursor("youtube", "auth_user")
+        # The cookies are a whole browser's sign-in and may hold several Google accounts (switching accounts in
+        # the browser changes which one is first). Only the history of the account the extension tracks counts.
+        expected = self.db.get_cursor("youtube", "tracked_account")
+        client = self.client or httpx.AsyncClient(timeout=30, follow_redirects=True)
+        try:
+            html = await self._page(client, cookies, auth_user)
+            found = _DATASYNC.search(html)
+            if expected and (found.group(1) if found else None) != expected:
+                for other in (str(i) for i in range(MAX_AUTH_USERS)):
+                    if other == (auth_user or "0"):
+                        continue
+                    try:
+                        page = await self._page(client, cookies, other)
+                    except (SignedOut, httpx.HTTPStatusError):     # no account at that position
+                        continue
+                    m = _DATASYNC.search(page)
+                    if m and m.group(1) == expected:
+                        log.info("youtube history: tracked account is signed-in account #%s (was %s)", other, auth_user)
+                        self.db.set_cursor("youtube", "auth_user", other)
+                        html = page
+                        break
+                else:
+                    raise WrongAccount("the shared sign-in doesn't include the tracked YouTube account "
+                                       "(sign in to it in the extension's browser)")
+        finally:
+            if self.client is None:
+                await client.aclose()
+        items = parse_history(extract(html))
         if not items:
             raise FormatChanged("history page parsed but no videos found")
         return items
@@ -259,6 +291,9 @@ class HistoryReader:
             items = await self.fetch()
         except SignedOut as e:
             self._health("signed_out", str(e), now)
+            return []
+        except WrongAccount as e:
+            self._health("wrong_account", str(e), now)
             return []
         except FormatChanged as e:
             self._health("format_changed", str(e), now)
@@ -402,7 +437,7 @@ class HistoryReader:
         if it.video_id not in agg["videos"]:
             agg["videos"].append(it.video_id)
             agg["seconds"] += float(info.get("length") or it.length or 30)
-        self.db.cache_set(key, agg, now + timedelta(days=3))
+        self.db.cache_set(key, agg, utcnow() + timedelta(days=3))   # cache_get checks expiry against the real clock
         item = HistoryItem(it.video_id, f"Shorts ×{len(agg['videos'])}", info["channel_id"], info.get("channel"),
                            None, None, it.section, short=True)
         return await self._event(f"yts:{info['channel_id']}:{day.isoformat()}", item, agg["seconds"],

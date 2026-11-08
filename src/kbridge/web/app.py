@@ -362,6 +362,8 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
         except (KeyError, TypeError, ValueError):
             raise HTTPException(400, "session_id, video_id and seconds are required")
         payload = {k: body.get(k) for k in ("title", "channel_id", "channel", "length", "channel_url", "account")}
+        if body.get("account"):                 # the history reader checks the cookies against this account
+            bridge.db.set_cursor("youtube", "tracked_account", str(body["account"])[:200])
         youtube().record_progress(session_id, video_id, seconds,
                                   float(body["position"]) if body.get("position") is not None else None, payload)
         bridge.db.set_cursor("youtube", "extension_seen", utcnow().isoformat())
@@ -390,6 +392,8 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
             text = cookies_txt(body.get("cookies") or [])
             if body.get("session_index") is not None:   # which signed-in account the history reader should ask for
                 bridge.db.set_cursor("youtube", "auth_user", str(int(body["session_index"])))
+            if body.get("account"):
+                bridge.db.set_cursor("youtube", "tracked_account", str(body["account"])[:200])
         else:
             text = (await request.body()).decode("utf-8", "replace")
         write_cookies(text, from_extension=True)

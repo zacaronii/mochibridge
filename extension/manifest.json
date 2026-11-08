@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "mochibridge for YouTube",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsveHVVxX4NM9eBChaySrzaibN5vx5CHY6MzFJktJKXWtEJ9zMYzpP9j2qx7eN9tEVgfKdOU5ukMVlJSrQ/pGMrD0p1BWbE1yD55DtsHn3FrvdkCfsnJ/tDSqLQYaeVten7Xi+PlqlmqIE6jf7Yen+7Rb8CxJn3/LvAw1VMphqFex9XKRshSD4LvZVKTRyN0yU3eZECVXRmp88jgxQz+cd1r9MCtASY7EI+f+UMdaBGmcpc1YyLaaCCQWCVXMKlGXNahjv5yJw2zGYtqP0cRuDj5niAG4fgnl6I+p2c3QAVTKb8Izs9m/fCNnSSviC2siRTj9gD4yPvlOlxreMrdHwwIDAQAB",
   "description": "Reports real YouTube watch time (pauses and ads excluded) to your mochibridge.",
   "permissions": [
