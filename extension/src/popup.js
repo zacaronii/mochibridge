@@ -59,7 +59,9 @@ $("shareCookies").onchange = async (e) => {
   if (e.target.checked) $("shareNow").onclick();     // send once right away instead of waiting for the hourly check
 };
 $("shareNow").onclick = async () => {
-  const r = await api.runtime.sendMessage({ type: "shareCookiesNow" });
-  $("bridge").textContent = r && r.ok ? "sign-in sent ✓" : `failed: ${r && r.error}`;
+  const [tab] = await api.tabs.query({ active: true, currentWindow: true });
+  const r = await api.runtime.sendMessage({ type: "shareCookiesNow", tabId: tab?.id });
+  $("bridge").textContent = r && r.ok ? `sign-in sent ✓ (${r.privateWindow ? "this private window" : "normal windows"})`
+    : `failed: ${r && r.error}`;
 };
 render();

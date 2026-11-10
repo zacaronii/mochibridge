@@ -37,7 +37,7 @@ api.runtime.onMessage.addListener((msg, sender, reply) => {
     return true;
   }
   if (msg.type === "shareCookiesNow") {
-    shareCookies(true).then(() => reply({ ok: true }), (e) => reply({ ok: false, error: String(e) }));
+    shareCookies(true, msg.tabId).then((r) => reply({ ok: true, ...r }), (e) => reply({ ok: false, error: String(e) }));
     return true;
   }
 });
@@ -59,7 +59,9 @@ async function handleProgress(msg) {
   }
 }
 
-async function shareCookies(force) {
+// tabId (from the popup's "Send sign-in now"): share the cookies of the window that tab is in, e.g. a private
+// window signed in only to the tracked account. Without it, the normal window's cookies are used.
+async function shareCookies(force, tabId) {
   const s = await settings();
   if (!s.shareCookies && !force) return;
   // The bridge reads that account's history, so it needs to know which one (and refuses others).
@@ -68,11 +70,19 @@ async function shareCookies(force) {
     const st = await call("/api/youtube/status").catch(() => null);
     if (!st || (st.cookies && st.history && !["signed_out", "wrong_account"].includes(st.history.state))) return;
   }
-  const cookies = await api.cookies.getAll({ domain: "youtube.com" });
+  let storeId, privateWindow = false;
+  if (tabId != null) {
+    const store = (await api.cookies.getAllCookieStores()).find((st) => (st.tabIds || []).includes(tabId));
+    if (store) { storeId = store.id; privateWindow = store.id !== "0" && store.id !== "firefox-default"; }
+  }
+  const cookies = await api.cookies.getAll({ domain: "youtube.com", ...(storeId ? { storeId } : {}) });
   const { lastSessionIndex } = await api.storage.local.get("lastSessionIndex");
   await call("/api/youtube/cookies", { method: "POST",
-    body: JSON.stringify({ cookies, session_index: lastSessionIndex ?? null, account: s.trackedAccount }) });
+    // A private window's sign-in has its own account order; the bridge finds the tracked account itself.
+    body: JSON.stringify({ cookies, session_index: privateWindow ? null : lastSessionIndex ?? null,
+                           account: s.trackedAccount }) });
   await api.storage.local.set({ lastCookieShare: Date.now() });
+  return { privateWindow };
 }
 
 // Google rotates the sign-in cookies every few minutes while YouTube is open and soon retires the old ones, so a
