@@ -99,6 +99,10 @@ def test_api_auth_progress_log_and_cookies(tmp_path):
     feed = [r["message"] for r in b.db.all("SELECT message FROM events WHERE source='youtube'")]
     assert feed == ["YouTube sign-in refreshed by the extension (history reader was signed_out)"]
     assert c.get("/api/youtube/status", headers=auth).json()["shares_today"] == 4
+    b.db.set_cursor("youtube", "history_state", "wrong_account")
+    for _ in range(3):                                                   # an outage: noted once
+        c.post("/api/youtube/cookies", json={"cookies": ck}, headers=auth)
+    assert sum("wrong_account" in r["message"] for r in b.db.all("SELECT message FROM events")) == 1
     p = tmp_path / "youtube-cookies.txt"
     assert "SAPISID\tabc" in p.read_text() and oct(p.stat().st_mode & 0o777) == "0o600"
     assert c.get("/api/youtube/status", headers=auth).json()["cookies"] is True

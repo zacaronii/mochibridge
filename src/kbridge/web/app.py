@@ -461,9 +461,15 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
         db.set_cursor("youtube", "cookies_shares", json.dumps({
             "day": datetime.now(ZoneInfo(bridge.cfg.timezone)).date().isoformat(), "n": shares_today() + 1}))
         state = db.get_cursor("youtube", "history_state")
-        if first or state not in (None, "ok"):
-            db.event("info", "youtube", "YouTube sign-in refreshed by the extension"
-                     + (f" (history reader was {state})" if state not in (None, "ok") else ""))
+        if state in (None, "ok"):
+            db.set_cursor("youtube", "cookies_noted_state", None)
+            if first:
+                db.event("info", "youtube", "YouTube sign-in refreshed by the extension")
+        elif db.get_cursor("youtube", "cookies_noted_state") != state:
+            # Once per outage: while the reader is signed out / on the wrong account the extension keeps
+            # re-sharing on every rotation, and the reader's own events already say when it recovers.
+            db.set_cursor("youtube", "cookies_noted_state", state)
+            db.event("info", "youtube", f"YouTube sign-in refreshed by the extension (history reader was {state})")
 
     @app.post("/youtube/quick-log")
     async def yt_quick_log(request: Request, token_: str = Form(alias="token"), url: str = Form(...),
