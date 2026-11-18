@@ -12,7 +12,7 @@ from .. import filters, lang
 from ..config import Config, EffectiveLibrary, SourceConfig
 from ..db import DB
 from ..models import ActivityEvent, SeriesMeta
-from .base import Library, Polled
+from .base import Library, Polled, libraries_stale
 
 FINAL_AFTER = timedelta(minutes=30)    # Kavita closes a session after 30 idle minutes
 OVERLAP = timedelta(days=1)            # sessions end by midnight; re-reading a day is cheap
@@ -124,6 +124,7 @@ class KavitaSource:
             base_url=self.src.url, timeout=httpx.Timeout(60, connect=5),
             headers={"x-api-key": self.src.api_key})
         self._libraries: dict[str, Library] | None = None
+        self._libraries_at: datetime | None = None
 
     async def aclose(self) -> None:
         await self.client.aclose()
@@ -137,6 +138,7 @@ class KavitaSource:
         libs = [Library(str(l["id"]), l["name"], LIBRARY_TYPES.get(l.get("type"), str(l.get("type"))))
                 for l in await self._get("/api/Library/libraries")]
         self._libraries = {l.id: l for l in libs}
+        self._libraries_at = datetime.now(timezone.utc)
         return libs
 
     async def _series_meta(self, series_id: int, library: EffectiveLibrary, library_id: str,
@@ -156,7 +158,7 @@ class KavitaSource:
         return series_meta(cached["series"], cached["metadata"], library, library_id, library_name)
 
     async def sessions(self, start: datetime | None = None) -> list[dict[str, Any]]:
-        if self._libraries is None:
+        if self._libraries is None or libraries_stale(self._libraries_at):
             await self.list_libraries()
         assert self._libraries is not None
         # `Libraries` must be repeated; without it Kavita silently returns nothing.

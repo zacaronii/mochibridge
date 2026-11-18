@@ -15,12 +15,13 @@ from .. import filters, lang
 from ..config import Config, EffectiveLibrary, SourceConfig
 from ..db import DB
 from ..models import ActivityEvent, SeriesMeta
-from .base import Library, Polled
+from .base import Library, Polled, libraries_stale
 
 FINAL_AFTER = timedelta(minutes=30)
 OVERLAP = timedelta(hours=2)
 PAGE_SIZE = 100
 ITEM_CACHE_TTL = timedelta(hours=6)
+UNKNOWN_LIBRARY_RECHECK = timedelta(minutes=5)
 
 
 def _ms(value: Any) -> datetime:
@@ -156,6 +157,7 @@ class ABSSource:
             base_url=self.src.url, timeout=httpx.Timeout(30, connect=5),
             headers={"Authorization": f"Bearer {self.src.api_key}"})
         self._libraries: dict[str, Library] | None = None
+        self._libraries_at: datetime | None = None
 
     async def aclose(self) -> None:
         await self.client.aclose()
@@ -169,6 +171,7 @@ class ABSSource:
         data = await self._get("/api/libraries")
         libs = [Library(l["id"], l["name"], l.get("mediaType", "")) for l in data["libraries"]]
         self._libraries = {l.id: l for l in libs}
+        self._libraries_at = datetime.now(timezone.utc)
         return libs
 
     async def _item(self, library_item_id: str) -> dict[str, Any] | None:
@@ -202,11 +205,15 @@ class ABSSource:
                 return out
 
     async def poll(self, since: datetime, now: datetime) -> list[Polled]:
-        if self._libraries is None:
+        if self._libraries is None or libraries_stale(self._libraries_at):
             await self.list_libraries()
         assert self._libraries is not None
         results = []
-        for s in await self.sessions_since(since - OVERLAP):
+        sessions = await self.sessions_since(since - OVERLAP)
+        if any((s.get("libraryId") or "") not in self._libraries for s in sessions) \
+                and libraries_stale(self._libraries_at, UNKNOWN_LIBRARY_RECHECK):
+            await self.list_libraries()            # a library created since the last listing
+        for s in sessions:
             lib_id = s.get("libraryId") or ""
             lib = self._libraries.get(lib_id)
             lib_name = lib.name if lib else "(deleted library)"

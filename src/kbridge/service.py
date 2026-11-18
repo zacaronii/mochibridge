@@ -247,17 +247,19 @@ class Bridge:
     async def run_forever(self, sync_seconds: int = 30) -> None:
         async def poll_loop(name: str) -> None:
             interval = self.cfg.source(name).poll_seconds
+            outage = Outage(self.db, name, "poll")
             while True:
                 try:
                     st = await self.poll(name)
                     if st.changed:
                         log.info("%s: %d sessions, %d changed, skipped %s", name, st.sessions, st.changed, st.skipped)
+                    outage.ok()
                 except Exception as e:  # keep polling; the error is in the feed
-                    log.exception("%s poll failed", name)
-                    self.db.event("error", name, f"poll failed: {e!r}")
+                    outage.failed(e)
                 await asyncio.sleep(interval)
 
         async def sync_loop() -> None:
+            outage = Outage(self.db, None, "sync")
             while True:
                 error = None
                 try:
@@ -265,10 +267,10 @@ class Bridge:
                     st = await self.sync()
                     if st.details:
                         log.info("sync: %s", "; ".join(st.details[:20]))
+                    outage.ok()
                 except Exception as e:
-                    log.exception("sync failed")
                     error = repr(e)
-                    self.db.event("error", None, f"sync failed: {e!r}")
+                    outage.failed(e)
                 self.heartbeat(error)
                 await asyncio.sleep(sync_seconds)
 
@@ -283,6 +285,33 @@ class Bridge:
 
         tasks = [poll_loop(n) for n in self.sources] + [sync_loop(), idmap_loop()]
         await asyncio.gather(*tasks)
+
+
+class Outage:
+    """One feed entry when a loop starts failing and one when it recovers, not one per attempt (a service
+    restarting overnight would otherwise fill the feed every 15 s)."""
+
+    def __init__(self, db: DB, source: str | None, what: str):
+        self.db, self.source, self.what = db, source, what
+        self.since: datetime | None = None
+        self.attempts = 0
+
+    def failed(self, e: Exception) -> None:
+        label = f"{self.source} {self.what}" if self.source else self.what
+        self.attempts += 1
+        if self.since is None:
+            self.since = utcnow()
+            log.exception("%s failed", label)
+            self.db.event("error", self.source, f"{self.what} failed: {e!r}")
+        else:
+            log.warning("%s still failing (attempt %d): %r", label, self.attempts, e)
+
+    def ok(self) -> None:
+        if self.since is None:
+            return
+        minutes = max(1, round((utcnow() - self.since).total_seconds() / 60))
+        self.db.event("info", self.source, f"{self.what} working again after {minutes} min ({self.attempts} failed attempts)")
+        self.since, self.attempts = None, 0
 
 
 def parse_since(value: str, now: datetime) -> datetime:

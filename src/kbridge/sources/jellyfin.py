@@ -21,12 +21,13 @@ from ..config import Config, EffectiveLibrary, SourceConfig
 from ..db import DB
 from ..models import ActivityEvent, SeriesMeta
 from ..resolver import normalize_title
-from .base import Library, Polled
+from .base import Library, Polled, libraries_stale
 from .jfplays import Sample, counted, group_plays, watched_by_language
 
 log = logging.getLogger(__name__)
 ITEM_TTL = timedelta(hours=12)
 LIBMAP_TTL = timedelta(hours=24)
+LIBMAP_MISS_RESCAN = timedelta(minutes=15)   # a series missing from the map triggers a rescan, at most this often
 SAMPLE_RETENTION = timedelta(days=30)
 PLUGIN_MATCH_SLACK = timedelta(minutes=2)
 PLUGIN_SETTLE = timedelta(minutes=10)
@@ -170,6 +171,8 @@ class JellyfinSource:
         self.anilist_client = anilist_client
         self._user_id: str | None = None
         self._libraries: dict[str, Library] | None = None
+        self._libraries_at: datetime | None = None
+        self._rescanned_at: datetime | None = None
 
     async def aclose(self) -> None:
         await self.client.aclose()
@@ -192,15 +195,16 @@ class JellyfinSource:
         libs = [Library(l["ItemId"], l["Name"], l.get("CollectionType") or "")
                 for l in await self._get("/Library/VirtualFolders")]
         self._libraries = {l.id: l for l in libs}
+        self._libraries_at = datetime.now(timezone.utc)
         return libs
 
-    async def _scan(self) -> dict[str, Any]:
+    async def _scan(self, force: bool = False) -> dict[str, Any]:
         """List each library's top-level series/movies once a day: series -> library (Ancestors don't show the
         library under Shokofin's VFS) and a title index used to recover watches whose item IDs changed."""
-        cached = self.db.cache_get("jellyfin:scan")
+        cached = None if force else self.db.cache_get("jellyfin:scan")
         if cached is not None:
             return cached
-        if self._libraries is None:
+        if force or self._libraries is None or libraries_stale(self._libraries_at):
             await self.list_libraries()
         uid = await self.user_id()
         libmap: dict[str, str] = {}
@@ -303,7 +307,13 @@ class JellyfinSource:
         return item
 
     async def _library_rule(self, series_id: str) -> tuple[str, str, EffectiveLibrary]:
-        lib_id = (await self.library_map()).get(series_id, "")
+        libmap = await self.library_map()
+        if series_id and series_id not in libmap and libraries_stale(self._rescanned_at, LIBMAP_MISS_RESCAN):
+            # The day-old map can be missing series (new ones, or a scan taken while Jellyfin was still starting
+            # up): rescan before calling the watch "unknown library" and skipping it.
+            self._rescanned_at = datetime.now(timezone.utc)
+            libmap = (await self._scan(force=True))["libmap"]
+        lib_id = libmap.get(series_id, "")
         lib = (self._libraries or {}).get(lib_id)
         name = lib.name if lib else "(unknown library)"
         return lib_id, name, self.src.library(lib_id, name)

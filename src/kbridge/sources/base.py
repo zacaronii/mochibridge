@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Protocol
 
 from ..filters import Decision
 from ..models import ActivityEvent
+
+
+LIBRARY_REFRESH = timedelta(minutes=30)      # re-list libraries this often, so new ones are picked up without a restart
+
+
+def libraries_stale(fetched_at: datetime | None, max_age: timedelta = LIBRARY_REFRESH) -> bool:
+    return fetched_at is None or datetime.now(timezone.utc) - fetched_at > max_age
 
 
 @dataclass(frozen=True)
