@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 ITEM_TTL = timedelta(hours=12)
 LIBMAP_TTL = timedelta(hours=24)
 LIBMAP_MISS_RESCAN = timedelta(minutes=15)   # a series missing from the map triggers a rescan, at most this often
+LIBRARY_RECHECK = timedelta(minutes=1)        # an unrecognised library ID re-reads the library list, at most this often
 SAMPLE_RETENTION = timedelta(days=30)
 PLUGIN_MATCH_SLACK = timedelta(minutes=2)
 PLUGIN_SETTLE = timedelta(minutes=10)
@@ -314,6 +315,8 @@ class JellyfinSource:
             self._rescanned_at = datetime.now(timezone.utc)
             libmap = (await self._scan(force=True))["libmap"]
         lib_id = libmap.get(series_id, "")
+        if lib_id and lib_id not in (self._libraries or {}) and libraries_stale(self._libraries_at, LIBRARY_RECHECK):
+            await self.list_libraries()      # the list can be incomplete if it was read while Jellyfin started up
         lib = (self._libraries or {}).get(lib_id)
         name = lib.name if lib else "(unknown library)"
         return lib_id, name, self.src.library(lib_id, name)

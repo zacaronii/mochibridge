@@ -64,6 +64,19 @@ async def test_jellyfin_rescans_library_map_on_a_miss(tmp_path):
     await src.aclose()
 
 
+@respx.mock
+async def test_jellyfin_rereads_an_incomplete_library_list(tmp_path):
+    """Read while Jellyfin was starting, the list lacked Anime: its watches were skipped as "(unknown library)"."""
+    mock_jellyfin([])
+    src = jf_source(tmp_path, [])
+    src.db.cache_set("jellyfin:scan", {"libmap": {"ser1": "libA"}, "index": {}},
+                     datetime.now(timezone.utc) + timedelta(hours=24))
+    src._libraries, src._libraries_at = {}, LONG_AGO
+    lib_id, name, rule = await src._library_rule("ser1")
+    assert (lib_id, name, rule.track) == ("libA", "Anime", True)
+    await src.aclose()
+
+
 def test_outage_makes_one_entry_when_it_starts_and_one_when_it_ends():
     db = DB(":memory:")
     o = Outage(db, "jellyfin", "poll")
