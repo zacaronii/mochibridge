@@ -13,7 +13,7 @@ import httpx
 
 from .. import filters, lang
 from ..config import Config, EffectiveLibrary, SourceConfig
-from ..db import DB
+from ..db import DB, iso, parse_iso
 from ..models import ActivityEvent, SeriesMeta
 from .base import Library, Polled, libraries_stale
 
@@ -22,6 +22,7 @@ OVERLAP = timedelta(hours=2)
 PAGE_SIZE = 100
 ITEM_CACHE_TTL = timedelta(hours=6)
 UNKNOWN_LIBRARY_RECHECK = timedelta(minutes=5)
+LATE_SCAN = timedelta(hours=6)    # how often the whole session list is checked for sessions uploaded late
 
 
 def _ms(value: Any) -> datetime:
@@ -210,6 +211,8 @@ class ABSSource:
         assert self._libraries is not None
         results = []
         sessions = await self.sessions_since(since - OVERLAP)
+        seen = {s["id"] for s in sessions}
+        sessions += [s for s in await self.late_sessions(now) if s["id"] not in seen]
         if any((s.get("libraryId") or "") not in self._libraries for s in sessions) \
                 and libraries_stale(self._libraries_at, UNKNOWN_LIBRARY_RECHECK):
             await self.list_libraries()            # a library created since the last listing
@@ -223,6 +226,25 @@ class ABSSource:
                 item = await self._item(s["libraryItemId"])
             results.append(normalize(s, self.src, rule, lib_name, item, self.cfg, now))
         return results
+
+    async def late_sessions(self, now: datetime) -> list[dict[str, Any]]:
+        """Sessions the bridge has never seen that an app uploaded long after they happened (offline listening,
+        an app's own backfill). They keep their original updatedAt, so the newest-first poll window never
+        reaches them. Every LATE_SCAN the whole list is read; only sessions started after `late_since` count
+        (set to the first scan's time, so turning this on doesn't log old history the backfill didn't cover)."""
+        last = parse_iso(self.db.get_cursor("abs", "late_scan_at"))
+        if last is not None and now - last < LATE_SCAN:
+            return []
+        self.db.set_cursor("abs", "late_scan_at", iso(now))
+        floor = parse_iso(self.db.get_cursor("abs", "late_since"))
+        if floor is None:
+            self.db.set_cursor("abs", "late_since", iso(now))
+            return []
+        known = {r["session_id"] for r in self.db.all(
+            "SELECT session_id FROM logs WHERE source='abs' UNION SELECT session_id FROM skips WHERE source='abs'"
+            " UNION SELECT session_id FROM reviews WHERE source='abs'")}
+        return [s for s in await self.sessions_since(datetime(1970, 1, 1, tzinfo=timezone.utc))
+                if s["id"] not in known and _ms(s["startedAt"]) >= floor]
 
     async def history(self, now: datetime) -> list[Polled]:
         """Every listening session ABS has, for the backfill."""

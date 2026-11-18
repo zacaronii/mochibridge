@@ -88,3 +88,30 @@ def test_outage_makes_one_entry_when_it_starts_and_one_when_it_ends():
     assert len(events) == 2
     assert events[0][0] == "error" and "poll failed" in events[0][1]
     assert events[1][0] == "info" and "working again" in events[1][1] and "5 failed attempts" in events[1][1]
+
+
+@respx.mock
+async def test_abs_picks_up_sessions_uploaded_late(fixture):
+    """An app's backfill (or offline listening) arrives with its original dates, far behind the poll window."""
+    base = fixture("abs/listening_sessions.json")["sessions"][0]
+    t = datetime(2026, 11, 18, 20, 0, tzinfo=timezone.utc)
+    ms = lambda dt: int(dt.timestamp() * 1000)
+    old = dict(base, id="late-1", startedAt=ms(t - timedelta(days=10)), updatedAt=ms(t - timedelta(days=10)))
+    known = dict(base, id="known-1", startedAt=ms(t - timedelta(days=10)), updatedAt=ms(t - timedelta(days=10)))
+    before = dict(base, id="pre-1", startedAt=ms(t - timedelta(days=60)), updatedAt=ms(t - timedelta(days=60)))
+    respx.get("http://abs/api/libraries").respond(json={"libraries": [{"id": base["libraryId"], "name": "ポッドキャスト"}]})
+    listing = respx.get("http://abs/api/me/listening-sessions").respond(
+        json={"sessions": [old, known, before], "numPages": 1})
+    respx.get(url__regex=r"http://abs/api/items/.*").respond(json={"media": {"episodes": []}})
+    db = DB(":memory:")
+    db.execute("INSERT INTO skips(source, session_id, item_key, reason, seen_at) VALUES ('abs','known-1','x','too_short','')")
+    src = absmod.ABSSource(ABS_CFG, db)
+
+    assert await src.poll(t, t) == []                 # first scan only sets the floor: no old history
+    db.set_cursor("abs", "late_since", (t - timedelta(days=30)).isoformat())
+    assert await src.poll(t + timedelta(hours=1), t + timedelta(hours=1)) == []   # not due yet
+    calls = listing.call_count
+    ps = await src.poll(t + timedelta(hours=7), t + timedelta(hours=7))
+    assert [p.session_id for p in ps] == ["late-1"]   # unseen and after the floor; known and too-old ones left out
+    assert listing.call_count > calls
+    await src.aclose()
