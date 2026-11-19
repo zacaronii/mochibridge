@@ -7,6 +7,12 @@ from datetime import datetime
 from typing import Any
 
 
+# kechimochi's content and activity types (web build 0.3.3)
+CONTENT_TYPES = ["Anime", "Movie", "Drama", "Manga", "Novel", "WebNovel", "NonFiction", "Audio", "Visual Novel",
+                 "Videogame", "Livestream", "Youtube Video", "Unknown"]
+ACTIVITY_TYPES = ["Watching", "Reading", "Listening", "Playing", "None"]
+
+
 @dataclass
 class SeriesMeta:
     """One kechimochi media entry's worth of source metadata."""
@@ -47,7 +53,7 @@ class ActivityEvent:
     quality: str = "measured"             # measured | position | estimate
     flags: list[str] = field(default_factory=list)
     nagare_key: str | None = None         # Nagare's history_id for this item, for the Nagare comparison
-    characters: int = 0                   # characters read (Genkan); 0 for sources that don't count them
+    characters: int = 0                   # characters read (push clients); 0 for sources that don't count them
 
 
 def event_to_dict(ev: ActivityEvent) -> dict[str, Any]:

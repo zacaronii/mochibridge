@@ -16,11 +16,11 @@ from .service import Bridge, parse_since
 from .sources.abs import ABSSource
 from .sources.jellyfin import JellyfinSource
 from .sources.kavita import KavitaSource
-from .sources.genkan import GenkanSource
+from .sources.push import PushSource
 from .sources.youtube import YouTubeSource
 
 LIVE_SOURCES = {"abs": ABSSource, "kavita": KavitaSource, "jellyfin": JellyfinSource, "youtube": YouTubeSource,
-                "genkan": GenkanSource}
+                "push": PushSource}
 ALL_SOURCES = LIVE_SOURCES
 
 

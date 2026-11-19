@@ -106,12 +106,15 @@ SCHEMA = [
     """
     ALTER TABLE logs ADD COLUMN retracted INTEGER NOT NULL DEFAULT 0;
     """,
-    # v9: Genkan reading sessions (seconds and characters only ever grow per session)
+    # v9: sessions pushed by your own apps (POST /api/sessions); seconds and characters only ever grow per session
     """
-    CREATE TABLE genkan_sessions (
-        session_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT NOT NULL, romm_rom_id INTEGER, platform TEXT,
-        started_at TEXT NOT NULL, updated_at TEXT NOT NULL, seconds REAL NOT NULL, characters INTEGER NOT NULL,
-        final INTEGER NOT NULL DEFAULT 0, language TEXT, quality TEXT NOT NULL, emitted_at TEXT);
+    CREATE TABLE push_sessions (
+        client TEXT NOT NULL, session_id TEXT NOT NULL, started_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        seconds REAL NOT NULL, characters INTEGER NOT NULL, final INTEGER NOT NULL DEFAULT 0,
+        content_type TEXT NOT NULL, activity_type TEXT NOT NULL, language TEXT, quality TEXT NOT NULL, note TEXT,
+        title TEXT NOT NULL, entry_key TEXT NOT NULL, entry_ids TEXT, entry_fields TEXT, emitted_at TEXT,
+        PRIMARY KEY (client, session_id));
+    CREATE INDEX push_sessions_open ON push_sessions(final, updated_at);
     """,
 ]
 

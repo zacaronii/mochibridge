@@ -24,13 +24,11 @@ from fastapi.templating import Jinja2Templates
 from .. import settings
 from ..config import _INHERIT, ConfigError
 from ..db import iso, parse_iso, utcnow
+from ..models import ACTIVITY_TYPES as ACTIVITIES, CONTENT_TYPES
 from ..service import Bridge
 from ..sources.jfplays import watched_by_language
 
 HERE = Path(__file__).parent
-CONTENT_TYPES = ["Anime", "Movie", "Drama", "Manga", "Novel", "WebNovel", "NonFiction", "Audio", "Visual Novel",
-                 "Videogame", "Livestream", "Youtube Video", "Unknown"]
-ACTIVITIES = ["Watching", "Reading", "Listening", "Playing", "None"]
 REASONS = {"played_flag_only": "Marked played, no watch data", "generated": "Kavita generated session",
            "language:unknown": "Unknown language", "long_session": "Very long session", "manual": "Manual"}
 
@@ -351,21 +349,22 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
                    settings.set_top("long_sessions.action", long_action))
         return back("/settings", err=err) if err else back("/settings", msg="saved")
 
-    # ------------------------------------------------------------- Genkan API
-    @app.post("/api/genkan/session")
-    async def genkan_session(request: Request) -> dict:
-        """One reading session from Genkan, sent again as it grows (seconds and characters only ever grow)."""
+    # ------------------------------------------------------------- Push API (your own apps)
+    @app.post("/api/sessions")
+    async def push_session(request: Request) -> dict:
+        """One session from one of your apps, sent again as it grows (seconds and characters only ever grow).
+        Format: README, "Push API"."""
         api_auth(request)
-        src = bridge.sources.get("genkan")
+        src = bridge.sources.get("push")
         if src is None:
-            raise HTTPException(503, "the Genkan source is not enabled")
+            raise HTTPException(503, "the push source is not enabled (sources.push.enabled)")
         try:
             body = await request.json()
         except ValueError:
             raise HTTPException(400, "body must be JSON") from None
         try:
             src.record_session(body)
-        except ValueError as e:                     # what's wrong with the post, for Genkan to log
+        except ValueError as e:                     # what's wrong with the post, for the app to log
             raise HTTPException(400, str(e)) from None
         return {"ok": True}
 

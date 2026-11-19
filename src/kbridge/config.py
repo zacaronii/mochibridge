@@ -12,16 +12,16 @@ import yaml
 
 from . import lang
 
-SOURCES = ("abs", "kavita", "jellyfin", "youtube", "genkan")
-NO_SERVER = {"youtube", "genkan"}     # sources that don't talk to a configured server (no url/api_key needed)
+SOURCES = ("abs", "kavita", "jellyfin", "youtube", "push")
+NO_SERVER = {"youtube", "push"}     # sources that don't talk to a configured server (no url/api_key needed)
 SOURCE_DEFAULTS = {
     "abs": {"content_type": "Audio", "activity_type": "Listening", "poll_seconds": 60},
     "kavita": {"content_type": "Manga", "activity_type": "Reading", "poll_seconds": 300},
     "jellyfin": {"content_type": "Anime", "activity_type": "Watching", "poll_seconds": 15},
     "youtube": {"content_type": "Youtube Video", "activity_type": "Watching", "poll_seconds": 15,
                 "unknown_language": "review", "default_track": True},
-    # Genkan (the Thor launcher) pushes its reading sessions; content and activity type come per session.
-    "genkan": {"content_type": "Videogame", "activity_type": "Playing", "poll_seconds": 15, "default_track": True},
+    # Your own apps post sessions to /api/sessions; each `client` is a library (per-client rules, default types).
+    "push": {"content_type": "Unknown", "activity_type": "None", "poll_seconds": 15, "default_track": True},
 }
 # Per-source switches (first value is the default). "review" holds the item for approval in the web UI.
 CHOICES = [

@@ -1,6 +1,6 @@
 # <img src="art/keeper.svg" alt="" width="44" height="44" align="absmiddle"> mochibridge
 
-Logs your immersion activity from **Jellyfin**, **Kavita**, **Audiobookshelf**, **YouTube** and **Genkan** into
+Logs your immersion activity from **Jellyfin**, **Kavita**, **Audiobookshelf**, **YouTube** and **your own apps** into
 [kechimochi](https://github.com/Morgawr/kechimochi) (the web build, tested against web-0.3.3) through its HTTP API.
 It creates one media entry per series and one activity log per viewing, reading or listening session, with covers and metadata.
 
@@ -15,7 +15,7 @@ an iOS Shortcut feed it YouTube viewing.
 | **Kavita** | Reading history: one log per reading session and chapter. Sessions Kavita invents from bulk "mark as read" are ignored by default | One per series |
 | **Audiobookshelf** | Your listening sessions | One per podcast or book |
 | **YouTube** | See [YouTube](#youtube) below | One per channel |
-| **Genkan** | The launcher pushes each reading session to `POST /api/genkan/session` (bearer `web.api_token`) as it grows: active time and characters (kana and kanji, each line once). Seconds and characters only ever grow per session; idle 10 min and it's final | One per game: visual novels as Visual Novel / Reading, other games as Videogame / Playing, linked by `romm.rom_id` |
+| **Your own apps** | Each app posts its sessions to the [Push API](#push-api) as they grow: active time, and characters if it counts them | One per stable ID the app sends (e.g. `romm.rom_id`), else per title |
 
 Each session passes through the same steps:
 
@@ -63,6 +63,47 @@ YouTube has no API for watch history, so three inputs feed one `youtube` source:
 
 When the extension or the share sheet logs a viewing the history reader already estimated, the estimate is retracted, so it isn't counted twice. Extension and share-sheet logs aren't deduplicated against each other.
 Videos without kana in the title or channel name go to Review by default. Setup is in [deploy/README.md](deploy/README.md#youtube).
+
+## Push API
+
+For your own apps (a game launcher, a reader, a script): `POST /api/sessions` with `Authorization: Bearer <web.api_token>`,
+the same token as the YouTube extension. Enable it with `sources.push.enabled: true`. Post a session as often as
+you like while it grows; mochibridge keeps the largest seconds and characters it has seen, and a session nothing has
+posted to for 10 minutes is finished (send `"final": true` to finish it at once).
+
+```json
+{
+  "client": "genkan",
+  "session_id": "genkan-1-1795117258712",
+  "started_at": "2026-11-19T20:00:00Z",
+  "seconds": 1200,
+  "characters": 4100,
+  "final": false,
+  "content_type": "Visual Novel",
+  "activity_type": "Reading",
+  "language": "ja",
+  "note": "Chapter 3",
+  "entry": {
+    "title": "マルコと銀河竜",
+    "ids": {"romm.rom_id": 117},
+    "fields": {"Platform": "PC"}
+  }
+}
+```
+
+| Field | |
+|---|---|
+| `client` | Your app's name (lowercase letters, digits, `-`, `_`). It works like a library: per-app rules (tracked, languages, default types) go under `sources.push.libraries.<client>` and on the Settings page |
+| `session_id` | Unique per session within the app |
+| `started_at` | ISO 8601 with an offset or `Z` (without one: the bridge's time zone) |
+| `seconds`, `characters` | Active time and characters so far. Only growth counts, so a late or repeated post never shrinks a log. `characters` is optional |
+| `content_type`, `activity_type` | kechimochi's types (`Visual Novel`, `Videogame`…; `Reading`, `Playing`…). Optional: the app's defaults from its rules |
+| `entry.title` | The kechimochi entry's title |
+| `entry.ids` | Optional stable IDs (`name` or `namespace.name`). The first one (by name) decides which entry a session belongs to; they're written into the entry's extra data (`romm.rom_id` as `{"romm": {"rom_id": …}}`) and match an existing entry that already has them |
+| `entry.fields` | Optional extra data for a new entry (strings or numbers) |
+| `language`, `note`, `quality` | Optional: language code (default `ja`), the log's note, `measured` (default) or `estimate` |
+
+Answers: `200 {"ok": true}`; `400` with what's wrong; `401` without the token; `503` when the source is disabled.
 
 ## Running it
 
