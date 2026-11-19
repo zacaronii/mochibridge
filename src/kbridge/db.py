@@ -106,6 +106,13 @@ SCHEMA = [
     """
     ALTER TABLE logs ADD COLUMN retracted INTEGER NOT NULL DEFAULT 0;
     """,
+    # v9: Genkan reading sessions (seconds and characters only ever grow per session)
+    """
+    CREATE TABLE genkan_sessions (
+        session_id TEXT PRIMARY KEY, kind TEXT NOT NULL, title TEXT NOT NULL, romm_rom_id INTEGER, platform TEXT,
+        started_at TEXT NOT NULL, updated_at TEXT NOT NULL, seconds REAL NOT NULL, characters INTEGER NOT NULL,
+        final INTEGER NOT NULL DEFAULT 0, language TEXT, quality TEXT NOT NULL, emitted_at TEXT);
+    """,
 ]
 
 

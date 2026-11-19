@@ -351,6 +351,23 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
                    settings.set_top("long_sessions.action", long_action))
         return back("/settings", err=err) if err else back("/settings", msg="saved")
 
+    # ------------------------------------------------------------- Genkan API
+    @app.post("/api/genkan/session")
+    async def genkan_session(request: Request) -> dict:
+        """One reading session from Genkan, sent again as it grows (seconds and characters only ever grow)."""
+        api_auth(request)
+        src = bridge.sources.get("genkan")
+        if src is None:
+            raise HTTPException(503, "the Genkan source is not enabled")
+        body = await request.json()
+        try:
+            str(body["session_id"]), str(body["title"]), str(body["started_at"])
+            float(body["seconds"]), int(body.get("characters") or 0)
+        except (KeyError, TypeError, ValueError):
+            raise HTTPException(400, "session_id, title, started_at and seconds are required")
+        src.record_session(body)
+        return {"ok": True}
+
     # ------------------------------------------------------------- YouTube API
     @app.post("/api/youtube/progress")
     async def yt_progress(request: Request) -> dict:

@@ -57,7 +57,7 @@ def desired_log(cfg: Config, polled: Polled) -> dict:
     local = ev.started_at.astimezone(ZoneInfo(cfg.timezone))
     return {
         "duration_minutes": max(1, round(ev.duration_seconds / 60)),
-        "characters": 0,
+        "characters": max(0, int(ev.characters)),
         "date": local.date().isoformat(),
         "date_precision": "day",
         "activity_type": ev.series.activity_type,

@@ -47,6 +47,7 @@ class ActivityEvent:
     quality: str = "measured"             # measured | position | estimate
     flags: list[str] = field(default_factory=list)
     nagare_key: str | None = None         # Nagare's history_id for this item, for the Nagare comparison
+    characters: int = 0                   # characters read (Genkan); 0 for sources that don't count them
 
 
 def event_to_dict(ev: ActivityEvent) -> dict[str, Any]:

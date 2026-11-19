@@ -89,6 +89,10 @@ sources:
     history_min_bar: half        # first sighting at YouTube's 10% minimum bar: half (5%) | full | review | ignore
     # cookies_path: /data/youtube-cookies.txt   (uploaded on the Settings page)
 
+  genkan:                        # reading sessions pushed by the Genkan launcher (POST /api/genkan/session, web.api_token)
+    enabled: false
+    languages: [ja]
+
 overrides:
   map: []      # - {source: abs, series_key: "podcast:<libraryItemId>", media_id: 42}
   ignore: []   # - {source: abs, series_key: "book:<libraryItemId>"}

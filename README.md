@@ -1,6 +1,6 @@
 # <img src="art/keeper.svg" alt="" width="44" height="44" align="absmiddle"> mochibridge
 
-Logs your immersion activity from **Jellyfin**, **Kavita**, **Audiobookshelf** and **YouTube** into
+Logs your immersion activity from **Jellyfin**, **Kavita**, **Audiobookshelf**, **YouTube** and **Genkan** into
 [kechimochi](https://github.com/Morgawr/kechimochi) (the web build, tested against web-0.3.3) through its HTTP API.
 It creates one media entry per series and one activity log per viewing, reading or listening session, with covers and metadata.
 
@@ -15,6 +15,7 @@ an iOS Shortcut feed it YouTube viewing.
 | **Kavita** | Reading history: one log per reading session and chapter. Sessions Kavita invents from bulk "mark as read" are ignored by default | One per series |
 | **Audiobookshelf** | Your listening sessions | One per podcast or book |
 | **YouTube** | See [YouTube](#youtube) below | One per channel |
+| **Genkan** | The launcher pushes each reading session to `POST /api/genkan/session` (bearer `web.api_token`) as it grows: active time and characters (kana and kanji, each line once). Seconds and characters only ever grow per session; idle 10 min and it's final | One per game: visual novels as Visual Novel / Reading, other games as Videogame / Playing, linked by `romm.rom_id` |
 
 Each session passes through the same steps:
 
