@@ -106,3 +106,45 @@ def test_api_disabled_without_token():
     b, km, src = make(token=None)
     c = TestClient(create_app(b, None))
     assert c.post("/api/genkan/session", json=body(60, 10), headers={"authorization": "Bearer x"}).status_code == 503
+
+
+def test_bad_posts_get_400_with_the_reason():
+    b, km, src = make()
+    c = TestClient(create_app(b, None))
+    auth = {"authorization": "Bearer secret-token"}
+    for extra, says in (({"started_at": "yesterday"}, "started_at"), ({"romm_rom_id": "abc"}, "romm_rom_id"),
+                        ({"language": 5}, "language"), ({"seconds": -1}, "seconds"), ({"seconds": None}, "seconds"),
+                        ({"characters": 1.5}, "characters"), ({"final": True, "platform": ["x"]}, "platform")):
+        r = c.post("/api/genkan/session", json={**body(60, 10), **extra}, headers=auth)
+        assert r.status_code == 400 and says in r.json()["detail"], (extra, r.text)
+    assert c.post("/api/genkan/session", json=[1, 2], headers=auth).status_code == 400
+    assert c.post("/api/genkan/session", content=b"not json", headers=auth).status_code == 400
+    assert b.db.one("SELECT count(*) n FROM genkan_sessions")["n"] == 0
+
+
+def test_numbers_as_strings_and_times_without_an_offset_are_accepted():
+    b, km, src = make()
+    src.cfg.timezone = "America/Chicago"
+    src.record_session(body("90", "300", romm_rom_id="117", started_at="2026-11-19T06:00:00"), now=T0)
+    row = b.db.one("SELECT * FROM genkan_sessions")
+    assert (row["seconds"], row["characters"], row["romm_rom_id"]) == (90.0, 300, 117)
+    assert row["started_at"] == T0.isoformat()          # no offset: the bridge's time zone (06:00 Chicago = 12:00 UTC)
+    src.record_session(body(90, 300, session_id="utc", started_at="2026-11-19T12:00:00Z"), now=T0)
+    assert b.db.one("SELECT started_at FROM genkan_sessions WHERE session_id='utc'")["started_at"] == T0.isoformat()
+
+
+async def test_a_session_that_went_idle_while_the_bridge_was_down_still_finishes():
+    b, km, src = make()
+    src.record_session(body(300, 900), now=T0)            # open session; the bridge sees it once
+    await poll(b, T0 + timedelta(seconds=30))
+    assert b.db.one("SELECT final FROM genkan_sessions")["final"] == 0
+    # The bridge is down while the session goes idle; it comes back 20 minutes later.
+    later = T0 + timedelta(minutes=20)
+    st = PollStats("genkan", later)
+    for p in await b.sources["genkan"].poll(later - timedelta(seconds=15), later):
+        assert p.event.final
+        await b.ingest(p, st)
+    await b.sync()
+    assert b.db.one("SELECT final FROM genkan_sessions")["final"] == 1
+    assert [l["duration_minutes"] for l in km.logs.values()] == [5]
+    assert await b.sources["genkan"].poll(later + timedelta(minutes=1), later + timedelta(minutes=2)) == []   # done
