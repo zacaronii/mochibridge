@@ -10,6 +10,7 @@ class FakeKechimochi:
         self.media = {m["id"]: copy.deepcopy(m) for m in (media or [])}
         self.logs = {}
         self.calls = []
+        self.covers = {}                        # media_id -> (bytes, filename, content type) uploaded
         self._next = max(self.media, default=0) + 1
 
     def _id(self):
@@ -87,6 +88,7 @@ class FakeKechimochi:
     async def upload_cover(self, media_id, data, filename="cover.jpg", content_type="image/jpeg"):
         path = f"/data/covers/{media_id}_x.jpg"
         self.media[media_id]["cover_image"] = path
+        self.covers[media_id] = (data, filename, content_type)
         self.calls.append(("POST", f"/covers/{media_id}"))
         return path
 

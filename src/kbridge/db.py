@@ -116,6 +116,10 @@ SCHEMA = [
         PRIMARY KEY (client, session_id));
     CREATE INDEX push_sessions_open ON push_sessions(final, updated_at);
     """,
+    # v10: a public cover image URL an app sent with the entry (uploaded covers are files in push-covers/)
+    """
+    ALTER TABLE push_sessions ADD COLUMN cover_url TEXT;
+    """,
 ]
 
 

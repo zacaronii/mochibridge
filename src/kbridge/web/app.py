@@ -20,12 +20,14 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.datastructures import UploadFile as StarletteUpload
 
 from .. import settings
 from ..config import _INHERIT, ConfigError
 from ..db import iso, parse_iso, utcnow
 from ..models import ACTIVITY_TYPES as ACTIVITIES, CONTENT_TYPES
 from ..service import Bridge
+from ..sources import push
 from ..sources.jfplays import watched_by_language
 
 HERE = Path(__file__).parent
@@ -363,10 +365,35 @@ def create_app(bridge: Bridge, store: settings.SettingsStore | None) -> FastAPI:
         except ValueError:
             raise HTTPException(400, "body must be JSON") from None
         try:
-            src.record_session(body)
+            answer = src.record_session(body)
         except ValueError as e:                     # what's wrong with the post, for the app to log
             raise HTTPException(400, str(e)) from None
-        return {"ok": True}
+        return {"ok": True, **answer}
+
+    @app.post("/api/covers")
+    async def push_cover(request: Request) -> dict:
+        """An entry's cover image from one of your apps (multipart: client, entry as JSON, image). README, "Push API"."""
+        api_auth(request)                           # before reading the form, so a missing token is a 401
+        src = bridge.sources.get("push")
+        if src is None:
+            raise HTTPException(503, "the push source is not enabled (sources.push.enabled)")
+        try:
+            form = await request.form()
+        except Exception:
+            raise HTTPException(400, "send multipart/form-data with client, entry and image") from None
+        image = form.get("image")
+        if not isinstance(image, StarletteUpload):
+            raise HTTPException(400, "image is required (a file part)")
+        try:
+            entry_obj = json.loads(str(form.get("entry") or ""))
+        except ValueError:
+            raise HTTPException(400, "entry must be a JSON object, as in session posts") from None
+        data = await image.read(push.MAX_COVER_BYTES + 1)
+        try:
+            key = src.store_cover(form.get("client"), entry_obj, data)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+        return {"ok": True, "entry": key}
 
     # ------------------------------------------------------------- YouTube API
     @app.post("/api/youtube/progress")

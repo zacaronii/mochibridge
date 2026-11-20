@@ -1,9 +1,14 @@
 import json
+import tempfile
 from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
+import httpx
+import respx
+
 from fakes import FakeKechimochi, entry
+from images import WEBP, png
 from kbridge import config
 from kbridge.db import DB
 from kbridge.service import Bridge, PollStats
@@ -16,7 +21,8 @@ AUTH = {"authorization": "Bearer secret-token"}
 
 def make(token="secret-token", media=None, libraries=None):
     cfg = config.parse({"mode": "live", "web": {"api_token": token},
-                        "sources": {"push": {"enabled": True, "languages": ["ja"], "libraries": libraries or {}}}}, {})
+                        "sources": {"push": {"enabled": True, "languages": ["ja"], "libraries": libraries or {},
+                                             "covers_dir": tempfile.mkdtemp(prefix="push-covers-")}}}, {})
     db = DB(":memory:")
     km = FakeKechimochi(media or [])
     src = push.PushSource(cfg, db)
@@ -150,7 +156,7 @@ def test_api_needs_the_token_and_the_source():
     b, km, src = make()
     c = TestClient(create_app(b, None))
     assert c.post("/api/sessions", json=body(60, 10)).status_code == 401
-    assert c.post("/api/sessions", json=body(60, 10), headers=AUTH).json() == {"ok": True}
+    assert c.post("/api/sessions", json=body(60, 10), headers=AUTH).json() == {"ok": True, "cover": "wanted"}
     assert b.db.one("SELECT characters FROM push_sessions")["characters"] == 10
     b2, _, _ = make(token=None)
     assert TestClient(create_app(b2, None)).post("/api/sessions", json=body(60, 10), headers=AUTH).status_code == 503
@@ -172,3 +178,101 @@ def test_bad_posts_get_400_with_the_reason():
     assert c.post("/api/sessions", json=[1, 2], headers=AUTH).status_code == 400
     assert c.post("/api/sessions", content=b"not json", headers=AUTH).status_code == 400
     assert b.db.one("SELECT count(*) n FROM push_sessions")["n"] == 0
+
+
+# ------------------------------------------------------------- covers
+def upload(c, image, entry_=GAME, client="genkan", headers=AUTH):
+    return c.post("/api/covers", data={"client": client, "entry": json.dumps(entry_, ensure_ascii=False)},
+                  files={"image": ("box.png", image, "image/png")}, headers=headers)
+
+
+async def test_session_posts_ask_for_a_cover_until_one_is_uploaded_then_it_fills_the_new_entry():
+    b, km, src = make()
+    c = TestClient(create_app(b, None))
+    first = c.post("/api/sessions", json=body(600, 0, GAME, final=True), headers=AUTH).json()
+    assert first == {"ok": True, "cover": "wanted"}
+    assert upload(c, png()).json() == {"ok": True, "entry": "genkan:romm.rom_id=117"}
+    assert c.post("/api/sessions", json=body(700, 0, GAME, final=True), headers=AUTH).json()["cover"] == "set"
+    await poll(b, T0)
+    (mid,) = km.media
+    data, name, ctype = km.covers[mid]
+    assert data == png() and (name, ctype) == ("cover.png", "image/png")
+
+
+async def test_a_cover_uploaded_after_the_last_session_still_reaches_the_entry():
+    b, km, src = make()
+    src.record_session(body(600, 0, GAME, final=True), now=T0)
+    await poll(b, T0)
+    (mid,) = km.media
+    assert mid not in km.covers
+    src.store_cover("genkan", {"title": "other title", "ids": {"romm.rom_id": 117}}, WEBP)   # same entry by its id
+    await b.sync()
+    assert km.covers[mid][0] == WEBP and km.covers[mid][2] == "image/webp"
+
+
+async def test_a_cover_never_replaces_one_already_on_the_entry():
+    existing = entry(41, "Survival Kids 2", extra={"romm": {"rom_id": "117"}}, content_type="Videogame",
+                     cover_image="/data/covers/mine.jpg")
+    b, km, src = make(media=[existing])
+    src.store_cover("genkan", GAME, png())
+    src.record_session(body(600, 0, GAME, final=True), now=T0)
+    await poll(b, T0)
+    assert km.media[41]["cover_image"] == "/data/covers/mine.jpg" and 41 not in km.covers
+    assert b.db.one("SELECT cover_done FROM series_map")["cover_done"] == 1
+
+
+async def test_a_new_upload_replaces_the_stored_file_of_another_type():
+    b, km, src = make()
+    src.store_cover("genkan", GAME, png())
+    src.store_cover("genkan", GAME, WEBP)
+    assert sorted(p.suffix for p in src.covers_dir.iterdir()) == [".webp"]
+
+
+@respx.mock
+async def test_a_cover_url_is_downloaded_and_checked():
+    respx.get("https://img.example/box.png").mock(return_value=httpx.Response(200, content=png()))
+    respx.get("https://img.example/page.html").mock(return_value=httpx.Response(200, content=b"<html>"))
+    b, km, src = make()
+    answer = src.record_session(body(600, 0, {**GAME, "cover_url": "https://img.example/box.png"}, final=True), now=T0)
+    assert answer == {"cover": "set"}
+    await poll(b, T0)
+    (mid,) = km.media
+    assert km.covers[mid][0] == png()
+    assert await src.fetch_cover("url:https://img.example/page.html") is None      # not an image: nothing uploaded
+    assert await src.fetch_cover("file:../../etc/passwd") is None                  # only files in push-covers/
+    await src.aclose()
+
+
+def test_cover_uploads_need_the_token_and_a_real_image():
+    b, km, src = make()
+    c = TestClient(create_app(b, None))
+    assert upload(c, png(), headers={}).status_code == 401
+    for kwargs, says in (({"image": b"GIF89a..."}, "JPEG, PNG or WebP"),
+                         ({"image": b"\xff\xd8\xff" + b"0" * (5 * 1024 * 1024)}, "larger than 5 MB"),
+                         ({"image": png(), "client": "Genkan!"}, "client"),
+                         ({"image": png(), "entry_": {"ids": {}}}, "title")):
+        r = upload(c, **kwargs)
+        assert r.status_code == 400 and says in r.json()["detail"], (kwargs, r.text)
+    r = c.post("/api/covers", data={"client": "genkan", "entry": "{not json"}, files={"image": ("a", png())},
+               headers=AUTH)
+    assert r.status_code == 400 and "entry" in r.json()["detail"]
+    r = c.post("/api/covers", data={"client": "genkan", "entry": json.dumps(GAME)}, headers=AUTH)
+    assert r.status_code == 400 and "image" in r.json()["detail"]
+    assert list(src.covers_dir.glob("*")) == []
+    assert c.post("/api/sessions", json={**body(60, 1), "entry": {**GAME, "cover_url": "ftp://x/y.png"}},
+                  headers=AUTH).status_code == 400
+
+
+async def test_uploading_again_refills_a_cover_you_cleared_but_never_replaces_one():
+    b, km, src = make()
+    src.store_cover("genkan", GAME, png())
+    src.record_session(body(600, 0, GAME, final=True), now=T0)
+    await poll(b, T0)
+    (mid,) = km.media
+    src.store_cover("genkan", GAME, WEBP)
+    await b.sync()
+    assert km.covers[mid][0] == png()                     # still the first one
+    km.media[mid]["cover_image"] = ""                     # cleared in kechimochi
+    src.store_cover("genkan", GAME, WEBP)
+    await b.sync()
+    assert km.covers[mid][0] == WEBP

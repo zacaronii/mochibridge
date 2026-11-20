@@ -101,9 +101,28 @@ posted to for 10 minutes is finished (send `"final": true` to finish it at once)
 | `entry.title` | The kechimochi entry's title |
 | `entry.ids` | Optional stable IDs (`name` or `namespace.name`). The first one (by name) decides which entry a session belongs to; they're written into the entry's extra data (`romm.rom_id` as `{"romm": {"rom_id": …}}`) and match an existing entry that already has them |
 | `entry.fields` | Optional extra data for a new entry (strings or numbers) |
+| `entry.cover_url` | Optional public http(s) URL of the entry's cover image (see Covers below) |
 | `language`, `note`, `quality` | Optional: language code (default `ja`), the log's note, `measured` (default) or `estimate` |
 
-Answers: `200 {"ok": true}`; `400` with what's wrong; `401` without the token; `503` when the source is disabled.
+Answers: `200 {"ok": true, "cover": "wanted" | "set"}`; `400` with what's wrong; `401` without the token; `503` when
+the source is disabled. `"cover": "wanted"` means the bridge has no image or URL for this entry yet.
+
+### Covers
+
+Upload the entry's cover once, when a session post answers `"cover": "wanted"`:
+
+```
+POST /api/covers            (multipart/form-data, same bearer token)
+  client = genkan
+  entry  = {"title": "サバイバルキッズ2", "ids": {"romm.rom_id": 117}}   (JSON; the same entry as in session posts)
+  image  = the file: JPEG, PNG or WebP, at most 5 MB
+```
+
+Answers `200 {"ok": true, "entry": "<entry key>"}` or `400` with what's wrong. Alternatively, send `entry.cover_url` in
+session posts when the app knows a correct public image URL; an uploaded image wins over a URL. Either way the image
+only fills an **empty** cover in kechimochi: a cover already there (yours or an earlier upload) is never replaced. To
+change one, clear it in kechimochi and upload the new image again. Uploaded images are kept in
+`push-covers/` next to the database (`sources.push.covers_dir` to move them).
 
 ## Running it
 
