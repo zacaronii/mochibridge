@@ -161,13 +161,18 @@ class Bridge:
         if ev is None:
             return False
         now = iso(utcnow())
+        polled = Polled(session_id, item_key, ev, Decision.ok())
+        # A skipped session logged anyway has no review row yet: give it the same display info as a held one, so
+        # it isn't a blank line under "Recently decided".
         self.db.execute(
-            "INSERT INTO reviews(source, session_id, item_key, reason, status, event_json, created_at, updated_at,"
-            " decided_at) VALUES (?,?,?, 'manual', 'approved', ?,?,?,?) ON CONFLICT(source, session_id, item_key)"
-            " DO UPDATE SET status='approved', decided_at=excluded.decided_at",
-            (source, session_id, item_key, json.dumps(event_to_dict(ev), ensure_ascii=False), now, now, now))
+            "INSERT INTO reviews(source, session_id, item_key, reason, status, event_json, meta_json, created_at,"
+            " updated_at, decided_at) VALUES (?,?,?, 'manual', 'approved', ?,?,?,?,?) ON CONFLICT(source, session_id,"
+            " item_key) DO UPDATE SET status='approved', decided_at=excluded.decided_at,"
+            " meta_json=coalesce(reviews.meta_json, excluded.meta_json)",
+            (source, session_id, item_key, json.dumps(event_to_dict(ev), ensure_ascii=False),
+             json.dumps(event_meta(self.cfg, polled), ensure_ascii=False), now, now, now))
         self.resolver.invalidate()
-        await self.ingest(Polled(session_id, item_key, ev, Decision.ok()), PollStats(source, utcnow()))
+        await self.ingest(polled, PollStats(source, utcnow()))
         self.db.event("info", source, f"approved {ev.series.title!r} {ev.note} ({round(ev.duration_seconds / 60)} min)")
         return True
 

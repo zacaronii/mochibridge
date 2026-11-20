@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 from fakes import FakeKechimochi
@@ -77,6 +78,8 @@ async def test_log_anyway_for_a_skipped_session():
     await b.sync()
     assert [l["duration_minutes"] for l in km.logs.values()] == [1]
     assert b.db.one("SELECT count(*) n FROM skips")["n"] == 0
+    shown = json.loads(b.db.one("SELECT meta_json FROM reviews")["meta_json"])     # "Recently decided" has a title
+    assert shown["series"] and shown["minutes"] == 1.4
 
 
 def test_unknown_language_switch_values():
